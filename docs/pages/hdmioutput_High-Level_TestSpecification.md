@@ -31,9 +31,9 @@ The HDMI Output HAL supports multiple output ports, each with:
 * Its own Controller interface
 * Event callback interfaces for state changes, EDID reporting, HDCP status, frame-rate updates, and hot-plug events
 
-- Hdmi Output Interface Definitions - [Hdmi output HAL](https://github.com/rdkcentral/rdk-halif-aidl/tree/0.13.1/hdmiputput/current/com/rdk/hal/hdmioutput)
+- Hdmi Output Interface Definitions - [Hdmi output HAL](https://github.com/rdkcentral/rdk-halif-aidl/tree/0.13.1/hdmioutput/current/com/rdk/hal/hdmioutput)
 
-- Hdmi Output HAL Feature Profile - [hfp-hdmioutput.yaml](https://github.com/rdkcentral/rdk-halif-aidl/tree/main/hdmiputput/current/hfp-hdmioutput.yaml)
+- Hdmi Output HAL Feature Profile - [hfp-hdmioutput.yaml](https://github.com/rdkcentral/rdk-halif-aidl/tree/main/hdmioutput/current/hfp-hdmioutput.yaml)
 
 
 ## L2 Test Specification
