@@ -135,8 +135,8 @@ UT_ADD_TEST(VTS_L2_HDMIOUTPUT, StateTransitions)
         // Reset event listener
         eventListener->reset();
         
-        // Test 1: CLOSED → READY (during open)
-        UT_LOG_INFO("Test Step 1: Opening HDMI output (CLOSED → READY)");
+        // Test 1: CLOSED to READY (during open)
+        UT_LOG_INFO("Test Step 1: Opening HDMI output (CLOSED to READY)");
         ::com::rdk::hal::hdmioutput::State initialState;
         HDMIOUTPUT_GET_STATE(hdmiOutput, initialState);
         UT_ASSERT_EQUAL(initialState, ::com::rdk::hal::hdmioutput::State::CLOSED);
@@ -160,10 +160,10 @@ UT_ADD_TEST(VTS_L2_HDMIOUTPUT, StateTransitions)
         UT_ASSERT_TRUE(eventListener->getNextStateChanges(stateChanges));
         UT_ASSERT_EQUAL(stateChanges.first, ::com::rdk::hal::hdmioutput::State::OPENING);
         UT_ASSERT_EQUAL(stateChanges.second, ::com::rdk::hal::hdmioutput::State::READY);
-        UT_LOG_INFO("State change callback verified: CLOSED → READY");
+        UT_LOG_INFO("State change callback verified: CLOSED to READY");
         
-        // Test 2: READY → STARTED (during start)
-        UT_LOG_INFO("Test Step 2: Starting HDMI output (READY → STARTED)");
+        // Test 2: READY to STARTED (during start)
+        UT_LOG_INFO("Test Step 2: Starting HDMI output (READY to STARTED)");
         eventListener->reset();
         
         HDMIOUTPUT_START(controller);
@@ -183,10 +183,10 @@ UT_ADD_TEST(VTS_L2_HDMIOUTPUT, StateTransitions)
         UT_ASSERT_TRUE(eventListener->getNextStateChanges(stateChanges));
         UT_ASSERT_EQUAL(stateChanges.first, ::com::rdk::hal::hdmioutput::State::STARTING);
         UT_ASSERT_EQUAL(stateChanges.second, ::com::rdk::hal::hdmioutput::State::STARTED);
-        UT_LOG_INFO("State change callback verified: READY → STARTED");
+        UT_LOG_INFO("State change callback verified: READY to STARTED");
         
-        // Test 3: STARTED → READY (during stop)
-        UT_LOG_INFO("Test Step 3: Stopping HDMI output (STARTED → READY)");
+        // Test 3: STARTED to READY (during stop)
+        UT_LOG_INFO("Test Step 3: Stopping HDMI output (STARTED to READY)");
         eventListener->reset();
         
         HDMIOUTPUT_STOP(controller);
@@ -206,10 +206,10 @@ UT_ADD_TEST(VTS_L2_HDMIOUTPUT, StateTransitions)
         UT_ASSERT_TRUE(eventListener->getNextStateChanges(stateChanges));
         UT_ASSERT_EQUAL(stateChanges.first, ::com::rdk::hal::hdmioutput::State::STOPPING);
         UT_ASSERT_EQUAL(stateChanges.second, ::com::rdk::hal::hdmioutput::State::READY);
-        UT_LOG_INFO("State change callback verified: STARTED → READY");
+        UT_LOG_INFO("State change callback verified: STARTED to READY");
         
-        // Test 4: READY → CLOSED (during close)
-        UT_LOG_INFO("Test Step 4: Closing HDMI output (READY → CLOSED)");
+        // Test 4: READY to CLOSED (during close)
+        UT_LOG_INFO("Test Step 4: Closing HDMI output (READY to CLOSED)");
         eventListener->reset();
         
         bool closeResult = false;
@@ -231,7 +231,7 @@ UT_ADD_TEST(VTS_L2_HDMIOUTPUT, StateTransitions)
         UT_ASSERT_TRUE(eventListener->getNextStateChanges(stateChanges));
         UT_ASSERT_EQUAL(stateChanges.first, ::com::rdk::hal::hdmioutput::State::CLOSING);
         UT_ASSERT_EQUAL(stateChanges.second, ::com::rdk::hal::hdmioutput::State::CLOSED);
-        UT_LOG_INFO("State change callback verified: READY → CLOSED");
+        UT_LOG_INFO("State change callback verified: READY to CLOSED");
     
         // Unregister event listener
         bool unregisterResult = false;
@@ -753,8 +753,9 @@ UT_ADD_TEST(VTS_L2_HDMIOUTPUT, SPDInfoFrame)
             HDMIOUTPUT_GET_SPD_INFOFRAME(controller, retrievedSPD);
             std::string retrievedVendor(reinterpret_cast<const char*>(retrievedSPD.vendorName.data()));
             std::string retrievedDesc(reinterpret_cast<const char*>(retrievedSPD.productDescription.data()));
-            UT_LOG_INFO("getSPDInfoFrame returned: vendor='%s', description='%s'",
-                        retrievedVendor.c_str(), retrievedDesc.c_str());
+            UT_LOG_INFO("getSPDInfoFrame returned: vendor='%s', description='%s', source='%s'",
+                        retrievedVendor.c_str(), retrievedDesc.c_str(), 
+                        ::com::rdk::hal::hdmioutput::toString(retrievedSPD.spdSourceInformation).c_str());
             
             // Verify SPD InfoFrame data matches
             UT_ASSERT_TRUE(retrievedSPD.vendorName == spdInfoFrame.vendorName);

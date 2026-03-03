@@ -233,10 +233,10 @@ install_test()
     install -t ${INSTALL_PATH} ${TOP_BUILD_DIR}/usr/lib/*
     install -t ${INSTALL_PATH} run.sh
 
-    #cp -r ${PROFILES_DIR} ${INSTALL_PATH}
+    cp -r ${PROFILES_DIR} ${INSTALL_PATH}
     #cp -r "${TOP}/test_configuration" ${INSTALL_PATH}
-    #cp -r "${TOP}/vcomponent/vcomponent_configurations" ${INSTALL_PATH}
-    #cp -r "${TOP}/vcomponent/hdmioutput_populate_controlPlane.sh" ${INSTALL_PATH}
+    cp -r "${TOP}/vcomponent/vcomponent_configurations" ${INSTALL_PATH}
+    cp -r "${TOP}/vcomponent/hdmioutput_post_command.sh" ${INSTALL_PATH}
 
     cd ${INSTALL_PATH}
     tar -czf ${OUT_TAR_FILE} *
@@ -308,7 +308,7 @@ elif [[ "$1" == [Tt]arget=* ]]; then
     build_aidl_libs
     build_ut_core
     build_halif_test
-#    build_vcomponent_services
+    build_vcomponent_services
     install_test
     echo -e "${BOLD}╔════════════════════════════════╗${RESET}"
     echo -e "${BOLD}* ${GREEN}Build Successful${RESET}               ${BOLD}*${RESET}"
