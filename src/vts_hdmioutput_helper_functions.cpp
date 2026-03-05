@@ -202,6 +202,87 @@ SPDSource convertStringToSPDSource(const std::string &val) {
   return source;
 }
 
+FreeSync convertStringToFreeSync(const std::string &val) {
+  FreeSync freeSync;
+  if (val == "UNSUPPORTED") {
+    freeSync = FreeSync::UNSUPPORTED;
+  } else if (val == "FREESYNC") {
+    freeSync = FreeSync::FREESYNC;
+  } else if (val == "FREESYNC_PREMIUM") {
+    freeSync = FreeSync::FREESYNC_PREMIUM;
+  } else if (val == "FREESYNC_PREMIUM_PRO") {
+    freeSync = FreeSync::FREESYNC_PREMIUM_PRO;
+  } else {
+    freeSync = FreeSync::UNSUPPORTED;
+  }
+  return freeSync;
+}
+
+HDMIVersion convertStringToHDMIVersion(const std::string &val) {
+  HDMIVersion version;
+  if (val == "HDMI_1_3") {
+    version = HDMIVersion::HDMI_1_3;
+  } else if (val == "HDMI_1_4") {
+    version = HDMIVersion::HDMI_1_4;
+  } else if (val == "HDMI_2_0") {
+    version = HDMIVersion::HDMI_2_0;
+  } else if (val == "HDMI_2_1") {
+    version = HDMIVersion::HDMI_2_1;
+  } else {
+    version = HDMIVersion::HDMI_1_3;
+  }
+  return version;
+}
+
+VIC convertStringToVIC(const std::string &val) {
+  // Extract numeric value from string like "VIC1_640_480_P_60_4_3"
+  if (val.find("VIC") == 0) {
+    size_t pos = 3; // After "VIC"
+    size_t end = val.find('_', pos);
+    if (end != std::string::npos) {
+      int vicNum = std::stoi(val.substr(pos, end - pos));
+      return static_cast<VIC>(vicNum);
+    }
+  }
+  return VIC::VIC0_UNAVAILABLE;
+}
+
+ExtendedColorimetry convertStringToExtendedColorimetry(const std::string &val) {
+  ExtendedColorimetry extColor;
+  if (val == "XV_YCC_601") {
+    extColor = ExtendedColorimetry::XV_YCC_601;
+  } else if (val == "XV_YCC_709") {
+    extColor = ExtendedColorimetry::XV_YCC_709;
+  } else if (val == "S_YCC_601") {
+    extColor = ExtendedColorimetry::S_YCC_601;
+  } else if (val == "OP_YCC_601") {
+    extColor = ExtendedColorimetry::OP_YCC_601;
+  } else if (val == "OP_RGB") {
+    extColor = ExtendedColorimetry::OP_RGB;
+  } else if (val == "BT2020_C_YCC") {
+    extColor = ExtendedColorimetry::BT2020_C_YCC;
+  } else if (val == "BT2020_RGB_YCC") {
+    extColor = ExtendedColorimetry::BT2020_RGB_YCC;
+  } else if (val == "ADDITIONAL_COLORIMETRY_EXTENSION") {
+    extColor = ExtendedColorimetry::ADDITIONAL_COLORIMETRY_EXTENSION;
+  } else {
+    extColor = ExtendedColorimetry::XV_YCC_601;
+  }
+  return extColor;
+}
+
+AdditionalColorimetryExtension convertStringToAdditionalColorimetryExtension(const std::string &val) {
+  AdditionalColorimetryExtension addColor;
+  if (val == "DCI_P3_RGB_D65") {
+    addColor = AdditionalColorimetryExtension::DCI_P3_RGB_D65;
+  } else if (val == "DCI_P3_RGB_THEATER") {
+    addColor = AdditionalColorimetryExtension::DCI_P3_RGB_THEATER;
+  } else {
+    addColor = AdditionalColorimetryExtension::DCI_P3_RGB_D65;
+  }
+  return addColor;
+}
+
 // Profile reading helper functions
 int getProfileSupportedVICCount(int resourceIndex) {
     std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedVICs";
@@ -241,12 +322,12 @@ int32_t getProfileSupportedContentType(int resourceIndex, int typeIndex) {
     
     // Map ContentType enum strings to numeric values
     std::string typeStr(typeString);
-    if (typeStr == "UNSPECIFIED") return 0;
-    if (typeStr == "GRAPHICS") return 1;
-    if (typeStr == "PHOTO") return 2;
-    if (typeStr == "CINEMA") return 3;
-    if (typeStr == "GAME") return 4;
-    return 0;
+    if (typeStr == "UNSPECIFIED") return static_cast<int32_t>(ContentType::UNSPECIFIED);
+    if (typeStr == "GRAPHICS") return static_cast<int32_t>(ContentType::GRAPHICS);
+    if (typeStr == "PHOTO") return static_cast<int32_t>(ContentType::PHOTO);
+    if (typeStr == "CINEMA") return static_cast<int32_t>(ContentType::CINEMA);
+    if (typeStr == "GAME") return static_cast<int32_t>(ContentType::GAME);
+    return static_cast<int32_t>(ContentType::UNSPECIFIED);
 }
 
 std::string getProfileSupportedHDRMode(int resourceIndex, int modeIndex) {
@@ -263,12 +344,12 @@ int32_t getProfileSupportedAFD(int resourceIndex, int afdIndex) {
     
     // Map AFD enum strings to numeric values
     std::string afdStr(afdString);
-    if (afdStr == "UNSPECIFIED") return 0;
-    if (afdStr == "SAME_AS_PICTURE") return 8;
-    if (afdStr == "CENTER_4_3") return 9;
-    if (afdStr == "CENTER_16_9") return 10;
-    if (afdStr == "CENTER_14_9") return 11;
-    return 8; // Default to SAME_AS_PICTURE
+    if (afdStr == "UNSPECIFIED") return static_cast<int32_t>(AFD::UNSPECIFIED);
+    if (afdStr == "SAME_AS_PICTURE") return static_cast<int32_t>(AFD::SAME_AS_PICTURE);
+    if (afdStr == "CENTER_4_3") return static_cast<int32_t>(AFD::CENTER_4_3);
+    if (afdStr == "CENTER_16_9") return static_cast<int32_t>(AFD::CENTER_16_9);
+    if (afdStr == "CENTER_14_9") return static_cast<int32_t>(AFD::CENTER_14_9);
+    return static_cast<int32_t>(AFD::SAME_AS_PICTURE); // Default to SAME_AS_PICTURE
 }
 
 int32_t getProfileSupportedScanInfo(int resourceIndex, int scanIndex) {
@@ -278,10 +359,11 @@ int32_t getProfileSupportedScanInfo(int resourceIndex, int scanIndex) {
     
     // Map ScanInformation enum strings to numeric values
     std::string scanStr(scanString);
-    if (scanStr == "NO_DATA") return 0;
-    if (scanStr == "OVERSCAN") return 1;
-    if (scanStr == "UNDERSCAN") return 2;
-    return 0;
+    if (scanStr == "NO_DATA") return static_cast<int32_t>(ScanInformation::NO_DATA);
+    if (scanStr == "OVERSCAN") return static_cast<int32_t>(ScanInformation::OVERSCAN);
+    if (scanStr == "UNDERSCAN") return static_cast<int32_t>(ScanInformation::UNDERSCAN);
+    if (scanStr == "RESERVED") return static_cast<int32_t>(ScanInformation::RESERVED);
+    return static_cast<int32_t>(ScanInformation::NO_DATA);
 }
 
 std::string getProfileSupportedSPDSource(int resourceIndex, int sourceIndex) {

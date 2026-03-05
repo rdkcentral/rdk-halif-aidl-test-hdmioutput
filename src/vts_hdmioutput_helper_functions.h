@@ -90,6 +90,9 @@
 #include "com/rdk/hal/hdmioutput/IHDMIOutputControllerListener.h"
 #include "com/rdk/hal/hdmioutput/BnHDMIOutputEventListener.h"
 #include "com/rdk/hal/hdmioutput/BnHDMIOutputControllerListener.h"
+#include "com/rdk/hal/hdmioutput/AFD.h"
+#include "com/rdk/hal/hdmioutput/ContentType.h"
+#include "com/rdk/hal/hdmioutput/ScanInformation.h"
 
 #define MAX_LENGTH 256
 
@@ -111,6 +114,11 @@ HDCPProtocolVersion convertStringToHDCPProtocolVersions(const std::string &val);
 Colorimetry convertStringToColorimetry(const std::string &val); 
 PixelFormat convertStringToPixelFormat(const std::string &val);
 SPDSource convertStringToSPDSource(const std::string &val);
+FreeSync convertStringToFreeSync(const std::string &val);
+HDMIVersion convertStringToHDMIVersion(const std::string &val);
+VIC convertStringToVIC(const std::string &val);
+ExtendedColorimetry convertStringToExtendedColorimetry(const std::string &val);
+AdditionalColorimetryExtension convertStringToAdditionalColorimetryExtension(const std::string &val);
 
 // Profile reading helper functions
 int32_t getProfileSupportedVIC(int resourceIndex, int vicIndex);

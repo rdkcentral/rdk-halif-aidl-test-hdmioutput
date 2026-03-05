@@ -102,7 +102,7 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
 #define HDMIOUTPUT_GET_PLATCAPABILITIES(hdmioutputHandle, platCap1) \
     do { \
         UT_LOG_INFO("Calling getCapabilities(OUT: platCap1)\n");\
-        ::android::binder::Status status = gHDMIOUTPUTHandle->getCapabilities(&platCap1);\
+        ::android::binder::Status status = hdmioutputHandle->getCapabilities(&platCap1);\
         UT_LOG_INFO("Result getCapabilities(OUT: nativeFrameRate:[%f], freeSync:[%d]), status:[isOK:%s, exception:%s]\n",\
                     platCap1.nativeFrameRate, static_cast<int32_t>(platCap1.freeSync),\
                     UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
@@ -133,6 +133,16 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
+#define HDMIOUTPUT_GET_HDMIOUTPUT_NEG(hdmioutputHandle, hdmiOutputId, hdmiOutput, status) \
+    do { \
+        UT_LOG_INFO("Calling getHDMIOutput(IN: hdmiOutputId:[%d], OUT: IHDMIOutput)\n", hdmiOutputId.value);\
+        status = hdmioutputHandle->getHDMIOutput(hdmiOutputId, &hdmiOutput);\
+        UT_LOG_INFO("Result getHDMIOutput(IN: hdmiOutputId:[%d], OUT: IHDMIOutput[%p]), status:[isOK:%s, exception:%s]\n", \
+                    hdmiOutputId.value, hdmiOutput.get(), \
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()), \
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
+    } while (0)
+
 #define HDMIOUTPUT_GET_CAPABILITIES(hdmiOutput, caps1) \
     do { \
         UT_LOG_INFO("Calling getCapabilities(IN: none, OUT: capabilities)\n");\
@@ -154,10 +164,21 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
         }\
         UT_LOG_INFO("Result getProperty(IN: property:[%d], OUT:_aidl_return[has value:%s]), status:[isOK:%s]\n",\
                     static_cast<int32_t>(property),\
-                    (propValue.value.has_value() ? "true" : "false"),\
+                    (optionalValue.has_value() ? "true" : "false"),\
                     (status.isOk() ? "true" : "false"));\
         UT_ASSERT_TRUE(status.isOk());\
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define HDMIOUTPUT_GET_PROPERTY_NEG(hdmiOutput, property, propValue, status) \
+    do { \
+        UT_LOG_INFO("Calling getProperty(IN: property:[%d], OUT: propertyValue)\n", static_cast<int32_t>(property));\
+        status = hdmiOutput->getProperty(property, &propValue);\
+        UT_LOG_INFO("Result getProperty(IN: property:[%d], OUT: propertyValue [has value: %s]), status:[isOK:%s, exception:%s]\n",\
+                    static_cast<int32_t>(property),\
+                    (propValue.has_value() ? "true" : "false"),\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
     } while (0)
 
 #define HDMIOUTPUT_GET_STATE(hdmiOutput, state) \
@@ -172,6 +193,16 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
+#define HDMIOUTPUT_GET_STATE_NEG(hdmiOutput, state, status) \
+    do { \
+        UT_LOG_INFO("Calling getState(IN: none, OUT:_aidl_return)");\
+        status = hdmiOutput->getState(state);\
+        UT_LOG_INFO("Result getState(OUT:_aidl_return:[%p]), status:[isOK:%s, exception:%s]",\
+                    state,\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
+    } while (0)
+
 #define HDMIOUTPUT_OPEN(hdmiOutput, validListener, tempController) \
     do { \
         UT_LOG_INFO("Calling open(IN: hdmiOutputControllerListener, OUT: IHDMIOutputController pointer)\n");\
@@ -180,6 +211,16 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
                      tempController.get(), status.isOk() ? "true" : "false");\
         UT_ASSERT_TRUE(status.isOk());\
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define HDMIOUTPUT_OPEN_NEG(hdmiOutput, listener, tempController, status) \
+    do { \
+        UT_LOG_INFO("Calling open(IN: hdmiOutputControllerListener, OUT: IHDMIOutputController pointer)\n");\
+        status = hdmiOutput->open(listener, &tempController);\
+        UT_LOG_INFO("Result open(IN: hdmiOutputControllerListener, OUT: IHDMIOutputController pointer[%p]), status:[isOK:%s, exception:%s]\n", \
+                     tempController.get(), \
+                     UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                     UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
     } while (0)
 
 #define HDMIOUTPUT_CLOSE(hdmiOutput, tempController, aidl_return) \
@@ -194,6 +235,16 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
+#define HDMIOUTPUT_CLOSE_NEG(hdmiOutput, tempController, aidl_return, status) \
+    do { \
+        UT_LOG_INFO("Calling close(IN:hdmiOutputController, OUT:_aidl_return)\n");\
+        status = hdmiOutput->close(tempController, &aidl_return);\
+        UT_LOG_INFO("Result close(IN:hdmiOutputController, OUT:_aidl_return [%s]), status:[isOK:%s, exception:%s]\n",\
+                    aidl_return ? "true" : "false",\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
+    } while (0)
+
 #define HDMIOUTPUT_REGISTER_EVENT_LISTENER(hdmiOutput, eventListener, aidl_return) \
     do { \
         UT_LOG_INFO("Calling registerEventListener(IN: hdmiOutputEventListener, OUT:_aidl_return)\n");\
@@ -204,6 +255,16 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
                     UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
         UT_ASSERT_TRUE(status.isOk());\
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define HDMIOUTPUT_REGISTER_EVENT_LISTENER_NEG(hdmiOutput, eventListener, aidl_return, status) \
+    do { \
+        UT_LOG_INFO("Calling registerEventListener(IN: hdmiOutputEventListener, OUT:_aidl_return)\n");\
+        status = hdmiOutput->registerEventListener(eventListener, &aidl_return);\
+        UT_LOG_INFO("Result registerEventListener(IN: hdmiOutputEventListener, OUT:_aidl_return [%s]), status:[isOK:%s, exception:%s]\n",\
+                    aidl_return ? "true" : "false",\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
     } while (0)
 
 #define HDMIOUTPUT_UNREGISTER_EVENT_LISTENER(hdmiOutput, eventListener, aidl_return) \
@@ -218,6 +279,16 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
+#define HDMIOUTPUT_UNREGISTER_EVENT_LISTENER_NEG(hdmiOutput, eventListener, aidl_return, status) \
+    do { \
+        UT_LOG_INFO("Calling unregisterEventListener(IN: hdmiOutputEventListener, OUT:_aidl_return)\n");\
+        status = hdmiOutput->unregisterEventListener(eventListener, &aidl_return);\
+        UT_LOG_INFO("Result unregisterEventListener(IN: hdmiOutputEventListener, OUT:_aidl_return [%s]), status:[isOK:%s, exception:%s]\n",\
+                    aidl_return ? "true" : "false",\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
+    } while (0)
+
 #define HDMIOUTPUT_START(controller) \
     do { \
         UT_LOG_INFO("Calling start()\n");\
@@ -227,6 +298,15 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
                     UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
         UT_ASSERT_TRUE(status.isOk());\
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define HDMIOUTPUT_START_NEG(controller, status) \
+    do { \
+        UT_LOG_INFO("Calling start()\n");\
+        status = controller->start();\
+        UT_LOG_INFO("Result start(), status:[isOK:%s, exception:%s]\n",\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
     } while (0)
 
 #define HDMIOUTPUT_STOP(controller) \
@@ -240,6 +320,15 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
+#define HDMIOUTPUT_STOP_NEG(controller, status) \
+    do { \
+        UT_LOG_INFO("Calling stop()\n");\
+        status = controller->stop();\
+        UT_LOG_INFO("Result stop(), status:[isOK:%s, exception:%s]\n",\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
+    } while (0)
+
 #define HDMIOUTPUT_GET_HPD_STATE(controller, hpdState) \
     do { \
         UT_LOG_INFO("Calling getHotPlugDetectState(OUT:_aidl_return)\n");\
@@ -250,6 +339,16 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
                     UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
         UT_ASSERT_TRUE(status.isOk());\
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define HDMIOUTPUT_GET_HPD_STATE_NEG(controller, hpdState, status) \
+    do { \
+        UT_LOG_INFO("Calling getHotPlugDetectState(OUT:_aidl_return)\n");\
+        status = controller->getHotPlugDetectState(hpdState);\
+        UT_LOG_INFO("Result getHotPlugDetectState(OUT:_aidl_return [%p]), status:[isOK:%s, exception:%s]\n",\
+                    hpdState,\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
     } while (0)
 
 #define HDMIOUTPUT_SET_PROPERTY(controller, property, propValue, aidl_return) \
@@ -265,6 +364,17 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
+#define HDMIOUTPUT_SET_PROPERTY_NEG(controller, property, propValue, aidl_return, status) \
+    do { \
+        UT_LOG_INFO("Calling setProperty(IN: property:[%d], propertyValue, OUT:_aidl_return)\n", static_cast<int32_t>(property));\
+        status = controller->setProperty(property, propValue, &aidl_return);\
+        UT_LOG_INFO("Result setProperty(IN: property:[%d], propertyValue, OUT:_aidl_return [%s]), status:[isOK:%s, exception:%s]\n",\
+                    static_cast<int32_t>(property),\
+                    aidl_return ? "true" : "false",\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
+    } while (0)
+
 #define HDMIOUTPUT_SET_PROPERTYMULTI(controller, propertyKVList, aidl_return) \
     do { \
         UT_LOG_INFO("Calling setPropertyMulti(IN:propertyKVList with size:[%zu], OUT:_aidl_return)\n", propertyKVList.size());\
@@ -275,6 +385,16 @@ extern sp<IHDMIOutputManager> gHDMIOUTPUTHandle;
                     UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
         UT_ASSERT_TRUE(status.isOk());\
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, propertyKVList, aidl_return, status) \
+    do { \
+        UT_LOG_INFO("Calling setPropertyMulti(IN:propertyKVList with size:[%zu], OUT:_aidl_return)\n", propertyKVList.size());\
+        status = controller->setPropertyMulti(propertyKVList, &aidl_return);\
+        UT_LOG_INFO("Result setPropertyMulti(IN:propertyKVList, OUT:_aidl_return [%s]), status:[isOK:%s, exception:%s]\n",\
+                    aidl_return ? "true" : "false",\
+                    UT_Control_GetMapString(bool_mapTable_hdmioutput, status.isOk()),\
+                    UT_Control_GetMapString(statusHdmiOutputException_mapTable, status.exceptionCode()));\
     } while (0)
 
 #define HDMIOUTPUT_GET_HDCP_CURRENT_VERSION(controller, hdcpVersion) \
