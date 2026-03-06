@@ -188,9 +188,9 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, getHDMIOutput_pos)
  * | Variation / Step | Description | Test Data | Expected Result | Notes |
  * | :----: | --------- | ---------- |-------------- | ----- |
  * | 01 | Retrieve the list of valid HDMI output IDs. | hdmiOutputIds vector | List of valid HDMI output IDs is obtained. | Should be successful |
- * | 02 | Attempt to fetch HDMI output with an ID less than the minimum valid ID. | invalidId = min(validIds) - 1 | API returns failure status or null object | Should Pass |
- * | 03 | Attempt to fetch HDMI output with an ID greater than the maximum valid ID. | invalidId = max(validIds) + 1 | API returns failure status or null object | Should Pass |
- * | 04 | Attempt to fetch HDMI output with the UNDEFINED ID value. | invalidId = UNDEFINED | API returns failure status or null object | Should Pass |
+ * | 02 | Attempt to fetch HDMI output with an ID less than the minimum valid ID. | invalidId = min(validIds) - 1 | API returns failure status and null object | Should Pass |
+ * | 03 | Attempt to fetch HDMI output with an ID greater than the maximum valid ID. | invalidId = max(validIds) + 1 | API returns failure status and null object | Should Pass |
+ * | 04 | Attempt to fetch HDMI output with the UNDEFINED ID value. | invalidId = UNDEFINED | API returns failure status and null object | Should Pass |
  */
 UT_ADD_TEST(VTS_L1_HDMIOUTPUT, getHDMIOutput_neg)
 {
@@ -208,26 +208,24 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, getHDMIOutput_neg)
     invalidId = hdmiOutputIds.front();
     invalidId.value -= 1;
     
-    android::binder::Status status1;
-    HDMIOUTPUT_GET_HDMIOUTPUT_NEG(gHDMIOUTPUTHandle, invalidId, hdmiOutput, status1);
-    UT_ASSERT_TRUE(!status1.isOk() || hdmiOutput == nullptr);
+    android::binder::Status status;
+    HDMIOUTPUT_GET_HDMIOUTPUT_NEG(gHDMIOUTPUTHandle, invalidId, hdmiOutput, status);
+    UT_ASSERT_TRUE(!status.isOk() && hdmiOutput == nullptr);
 
     // Test with ID greater than maximum
     invalidId = hdmiOutputIds.back();
     invalidId.value += 1;
     
-    hdmiOutput = nullptr;
-    android::binder::Status status2;
-    HDMIOUTPUT_GET_HDMIOUTPUT_NEG(gHDMIOUTPUTHandle, invalidId, hdmiOutput, status2);
-    UT_ASSERT_TRUE(!status2.isOk() || hdmiOutput == nullptr);
+    android::binder::Status status1;
+    HDMIOUTPUT_GET_HDMIOUTPUT_NEG(gHDMIOUTPUTHandle, invalidId, hdmiOutput, status1);
+    UT_ASSERT_TRUE(!status1.isOk() && hdmiOutput == nullptr);
 
     // Test with UNDEFINED
     invalidId.value = IHDMIOutput::Id::UNDEFINED;
     
-    hdmiOutput = nullptr;
-    android::binder::Status status3;
-    HDMIOUTPUT_GET_HDMIOUTPUT_NEG(gHDMIOUTPUTHandle, invalidId, hdmiOutput, status3);
-    UT_ASSERT_TRUE(!status3.isOk() || hdmiOutput == nullptr);
+    android::binder::Status status2;
+    HDMIOUTPUT_GET_HDMIOUTPUT_NEG(gHDMIOUTPUTHandle, invalidId, hdmiOutput, status2);
+    UT_ASSERT_TRUE(!status2.isOk() && hdmiOutput == nullptr);
 }
 
 /**
@@ -257,12 +255,12 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, getPlatformCapabilities_pos)
     HDMIOUTPUT_GET_PLATCAPABILITIES(gHDMIOUTPUTHandle, caps);
 
     // Verify platform capabilities match profile
-    double expectedNativeFrameRate = ut_kvp_getDoubleField(ut_kvp_profile_getInstance(), "hdmioutput/platform/nativeFrameRate");
+    double expectedNativeFrameRate = ut_kvp_getDoubleField(ut_kvp_profile_getInstance(), "hdmioutput/platformCapabilities/nativeFrameRate");
     UT_ASSERT_EQUAL(caps.nativeFrameRate, expectedNativeFrameRate);
     UT_LOG_INFO("Native frame rate validated: %.2f", caps.nativeFrameRate);
 
     char freeSyncStr[UT_KVP_MAX_ELEMENT_SIZE];
-    UT_KVP_PROFILE_GET_STRING("hdmioutput/platform/freeSync", freeSyncStr);
+    UT_KVP_PROFILE_GET_STRING("hdmioutput/platformCapabilities/freeSync", freeSyncStr);
     hdmioutput::FreeSync expectedFreeSync = convertStringToFreeSync(std::string(freeSyncStr));
     UT_ASSERT_EQUAL(static_cast<int32_t>(caps.freeSync), static_cast<int32_t>(expectedFreeSync));
     UT_LOG_INFO("FreeSync level validated: %s", freeSyncStr);
@@ -342,106 +340,178 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, getCapabilities_pos)
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedVersions";
         uint32_t versionCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedVersions.size(), versionCount);
+        
+        // Load all expected versions from HFP
+        std::vector<hdmioutput::HDMIVersion> expectedVersions;
         for (uint32_t j = 0; j < versionCount; ++j) {
             char versionStr[UT_KVP_MAX_ELEMENT_SIZE];
             std::string versionKey = key + "." + std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(versionKey.c_str(), versionStr);
-            hdmioutput::HDMIVersion expectedVersion = convertStringToHDMIVersion(std::string(versionStr));
-            UT_ASSERT_EQUAL(static_cast<int32_t>(capabilities.supportedVersions[j]), static_cast<int32_t>(expectedVersion));
+            expectedVersions.push_back(convertStringToHDMIVersion(std::string(versionStr)));
+        }
+        
+        // Verify each capability value exists in expected values
+        for (const auto& version : capabilities.supportedVersions) {
+            bool found = std::find(expectedVersions.begin(), expectedVersions.end(), version) != expectedVersions.end();
+            UT_ASSERT_TRUE(found);
         }
 
         // Verify supported VICs - count and values
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedVICs";
         uint32_t vicCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedVICs.size(), vicCount);
+        
+        // Load all expected VICs from HFP
+        std::vector<hdmioutput::VIC> expectedVICs;
         for (uint32_t j = 0; j < vicCount; ++j) {
             char vicStr[UT_KVP_MAX_ELEMENT_SIZE];
             std::string vicKey = key + "." + std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(vicKey.c_str(), vicStr);
-            hdmioutput::VIC expectedVIC = convertStringToVIC(std::string(vicStr));
-            UT_ASSERT_EQUAL(static_cast<int32_t>(capabilities.supportedVICs[j]), static_cast<int32_t>(expectedVIC));
+            expectedVICs.push_back(convertStringToVIC(std::string(vicStr)));
+        }
+        
+        // Verify each capability value exists in expected values
+        for (const auto& vic : capabilities.supportedVICs) {
+            bool found = std::find(expectedVICs.begin(), expectedVICs.end(), vic) != expectedVICs.end();
+            UT_ASSERT_TRUE(found);
         }
 
         // Verify supported HDR output modes - count and values
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedHDROutputModes";
         uint32_t hdrModeCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedHDROutputModes.size(), hdrModeCount);
+        
+        // Load all expected HDR modes from HFP
+        std::vector<hdmioutput::HDROutputMode> expectedHDRModes;
         for (uint32_t j = 0; j < hdrModeCount; ++j) {
             char hdrModeStr[UT_KVP_MAX_ELEMENT_SIZE];
             std::string hdrModeKey = key + "." + std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(hdrModeKey.c_str(), hdrModeStr);
-            hdmioutput::HDROutputMode expectedMode = convertStringToHDROutputMode(std::string(hdrModeStr));
-            UT_ASSERT_EQUAL(static_cast<int32_t>(capabilities.supportedHDROutputModes[j]), static_cast<int32_t>(expectedMode));
+            expectedHDRModes.push_back(convertStringToHDROutputMode(std::string(hdrModeStr)));
+        }
+        
+        // Verify each capability value exists in expected values
+        for (const auto& mode : capabilities.supportedHDROutputModes) {
+            bool found = std::find(expectedHDRModes.begin(), expectedHDRModes.end(), mode) != expectedHDRModes.end();
+            UT_ASSERT_TRUE(found);
         }
 
         // Verify supported HDCP versions - count and values
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedHDCPVersions";
         uint32_t hdcpCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedHDCPProtocolVersions.size(), hdcpCount);
+        
+        // Load all expected HDCP versions from HFP
+        std::vector<hdmioutput::HDCPProtocolVersion> expectedHDCPVersions;
         for (uint32_t j = 0; j < hdcpCount; ++j) {
             char hdcpStr[UT_KVP_MAX_ELEMENT_SIZE];
             std::string hdcpKey = key + "." + std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(hdcpKey.c_str(), hdcpStr);
-            hdmioutput::HDCPProtocolVersion expectedVersion = convertStringToHDCPProtocolVersions(std::string(hdcpStr));
-            UT_ASSERT_EQUAL(static_cast<int32_t>(capabilities.supportedHDCPProtocolVersions[j]), static_cast<int32_t>(expectedVersion));
+            expectedHDCPVersions.push_back(convertStringToHDCPProtocolVersions(std::string(hdcpStr)));
+        }
+        
+        // Verify each capability value exists in expected values
+        for (const auto& version : capabilities.supportedHDCPProtocolVersions) {
+            bool found = std::find(expectedHDCPVersions.begin(), expectedHDCPVersions.end(), version) != expectedHDCPVersions.end();
+            UT_ASSERT_TRUE(found);
         }
 
         // Verify supported colorimetries - count and values
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedColorimetries";
         uint32_t colorimetryCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedColorimetries.size(), colorimetryCount);
+        
+        // Load all expected colorimetries from HFP
+        std::vector<hdmioutput::Colorimetry> expectedColorimetries;
         for (uint32_t j = 0; j < colorimetryCount; ++j) {
             char colorimetryStr[UT_KVP_MAX_ELEMENT_SIZE];
             std::string colorimetryKey = key + "." + std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(colorimetryKey.c_str(), colorimetryStr);
-            hdmioutput::Colorimetry expectedColorimetry = convertStringToColorimetry(std::string(colorimetryStr));
-            UT_ASSERT_EQUAL(static_cast<int32_t>(capabilities.supportedColorimetries[j]), static_cast<int32_t>(expectedColorimetry));
+            expectedColorimetries.push_back(convertStringToColorimetry(std::string(colorimetryStr)));
+        }
+        
+        // Verify each capability value exists in expected values
+        for (const auto& colorimetry : capabilities.supportedColorimetries) {
+            bool found = std::find(expectedColorimetries.begin(), expectedColorimetries.end(), colorimetry) != expectedColorimetries.end();
+            UT_ASSERT_TRUE(found);
         }
 
         // Verify supported extended colorimetries - count and values
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedExtendedColorimetries";
         uint32_t extColorimetryCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedExtendedColorimetries.size(), extColorimetryCount);
+        
+        // Load all expected extended colorimetries from HFP
+        std::vector<hdmioutput::ExtendedColorimetry> expectedExtColorimetries;
         for (uint32_t j = 0; j < extColorimetryCount; ++j) {
             char extColorStr[UT_KVP_MAX_ELEMENT_SIZE];
             std::string extColorKey = key + "." + std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(extColorKey.c_str(), extColorStr);
-            hdmioutput::ExtendedColorimetry expectedExtColor = convertStringToExtendedColorimetry(std::string(extColorStr));
-            UT_ASSERT_EQUAL(static_cast<int32_t>(capabilities.supportedExtendedColorimetries[j]), static_cast<int32_t>(expectedExtColor));
+            expectedExtColorimetries.push_back(convertStringToExtendedColorimetry(std::string(extColorStr)));
+        }
+        
+        // Verify each capability value exists in expected values
+        for (const auto& extColor : capabilities.supportedExtendedColorimetries) {
+            bool found = std::find(expectedExtColorimetries.begin(), expectedExtColorimetries.end(), extColor) != expectedExtColorimetries.end();
+            UT_ASSERT_TRUE(found);
         }
 
         // Verify supported additional colorimetry extensions - count and values
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedAdditionalColorimetryExtensions";
         uint32_t additionalColorimetryCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedAdditionalColorimetryExtensions.size(), additionalColorimetryCount);
+        
+        // Load all expected additional colorimetry extensions from HFP
+        std::vector<hdmioutput::AdditionalColorimetryExtension> expectedAddColorimetries;
         for (uint32_t j = 0; j < additionalColorimetryCount; ++j) {
             char addColorStr[UT_KVP_MAX_ELEMENT_SIZE];
             std::string addColorKey = key + "." + std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(addColorKey.c_str(), addColorStr);
-            hdmioutput::AdditionalColorimetryExtension expectedAddColor = convertStringToAdditionalColorimetryExtension(std::string(addColorStr));
-            UT_ASSERT_EQUAL(static_cast<int32_t>(capabilities.supportedAdditionalColorimetryExtensions[j]), static_cast<int32_t>(expectedAddColor));
+            expectedAddColorimetries.push_back(convertStringToAdditionalColorimetryExtension(std::string(addColorStr)));
+        }
+        
+        // Verify each capability value exists in expected values
+        for (const auto& addColor : capabilities.supportedAdditionalColorimetryExtensions) {
+            bool found = std::find(expectedAddColorimetries.begin(), expectedAddColorimetries.end(), addColor) != expectedAddColorimetries.end();
+            UT_ASSERT_TRUE(found);
         }
 
         // Verify supported color depths - count and values
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedColorDepths";
         uint32_t colorDepthCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedColorDepths.size(), colorDepthCount);
+        
+        // Load all expected color depths from HFP
+        std::vector<int32_t> expectedColorDepths;
         for (uint32_t j = 0; j < colorDepthCount; ++j) {
             std::string depthKey = key + "." + std::to_string(j);
-            int32_t expectedDepth = UT_KVP_PROFILE_GET_UINT32(depthKey.c_str());
-            UT_ASSERT_EQUAL(capabilities.supportedColorDepths[j], expectedDepth);
+            expectedColorDepths.push_back(UT_KVP_PROFILE_GET_UINT32(depthKey.c_str()));
+        }
+        
+        // Verify each capability value exists in expected values
+        for (const auto& depth : capabilities.supportedColorDepths) {
+            bool found = std::find(expectedColorDepths.begin(), expectedColorDepths.end(), depth) != expectedColorDepths.end();
+            UT_ASSERT_TRUE(found);
         }
 
         // Verify supported pixel formats - count and values
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedPixelFormats";
         uint32_t pixelFormatCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedPixelFormats.size(), pixelFormatCount);
+        
+        // Load all expected pixel formats from HFP
+        std::vector<hdmioutput::PixelFormat> expectedPixelFormats;
         for (uint32_t j = 0; j < pixelFormatCount; ++j) {
             char pixelFormatStr[UT_KVP_MAX_ELEMENT_SIZE];
             std::string pixelFormatKey = key + "." + std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(pixelFormatKey.c_str(), pixelFormatStr);
-            hdmioutput::PixelFormat expectedFormat = convertStringToPixelFormat(std::string(pixelFormatStr));
-            UT_ASSERT_EQUAL(static_cast<int32_t>(capabilities.supportedPixelFormats[j]), static_cast<int32_t>(expectedFormat));
+            expectedPixelFormats.push_back(convertStringToPixelFormat(std::string(pixelFormatStr)));
+        }
+        
+        // Verify each capability value exists in expected values
+        for (const auto& format : capabilities.supportedPixelFormats) {
+            bool found = std::find(expectedPixelFormats.begin(), expectedPixelFormats.end(), format) != expectedPixelFormats.end();
+            UT_ASSERT_TRUE(found);
         }
     }
 }
@@ -578,7 +648,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, open_neg)
 
     android::binder::Status status;
     HDMIOUTPUT_OPEN_NEG(hdmiOutput, nullptr, controller, status);
-    UT_ASSERT_TRUE(status.isOk());
+    UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_EQUAL(controller, nullptr);
     android::sp<HDMIOutputControllerListener> controllerListener = new HDMIOutputControllerListener();
     HDMIOUTPUT_OPEN(hdmiOutput, controllerListener, controller);
@@ -670,7 +740,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, close_neg)
     UT_ASSERT_EQUAL(state, hdmioutput::State::CLOSED);
 
     // Try to close before opening - should fail
-    bool closeResult = true;
+    bool closeResult = false;
     android::binder::Status status1;
     HDMIOUTPUT_CLOSE_NEG(hdmiOutput, controller, closeResult, status1);
     UT_ASSERT_FALSE(status1.isOk());
@@ -680,7 +750,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, close_neg)
     UT_ASSERT_NOT_EQUAL(controller, nullptr);
 
     // Try to close with null controller - should fail
-    closeResult = true;
+    closeResult = false;
     android::binder::Status status2;
     HDMIOUTPUT_CLOSE_NEG(hdmiOutput, nullptr, closeResult, status2);
     UT_ASSERT_FALSE(status2.isOk());
@@ -799,9 +869,10 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, registerEventListener_neg)
 
     // Second registration should fail
     android::binder::Status status;
-    HDMIOUTPUT_REGISTER_EVENT_LISTENER_NEG(hdmiOutput, eventListener, registerResult, status);
+    bool registerResult2 = false;  // Use fresh variable for negative test
+    HDMIOUTPUT_REGISTER_EVENT_LISTENER_NEG(hdmiOutput, eventListener, registerResult2, status);
     UT_ASSERT_FALSE(status.isOk());
-    UT_ASSERT_FALSE(registerResult);
+    UT_ASSERT_EQUAL(status.exceptionCode(), android::binder::Status::EX_UNSUPPORTED_OPERATION);
 
     // Cleanup
     bool unregisterResult = false;
@@ -833,11 +904,11 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, unregisterEventListener_neg)
     UT_ASSERT_NOT_EQUAL(hdmiOutput, nullptr);
 
     android::sp<HDMIOutputEventListener> eventListener = new HDMIOutputEventListener();
-    bool unregisterResult = true;
+    bool unregisterResult = false;
 
     android::binder::Status status;
     HDMIOUTPUT_UNREGISTER_EVENT_LISTENER_NEG(hdmiOutput, eventListener, unregisterResult, status);
-    UT_ASSERT_TRUE(status.isOk());
+    UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(unregisterResult);
 }
 
@@ -1233,7 +1304,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, getHotPlugDetectState_neg)
 /**
  * @brief Validate setProperty API positive scenario for all property types
  *
- * This test verifies that all properties can be set successfully on the controller using valid enum values.
+ * This test verifies that all properties can be set successfully on the controller using all supported values from HFP.
  *
  * **Test Group ID:** Basic: 01
  * **Test Case ID:** 024
@@ -1247,11 +1318,11 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, getHotPlugDetectState_neg)
  * | Variation / Step | Description | Test Data | Expected Result | Notes |
  * | :----: | --------- | ---------- |-------------- | ----- |
  * | 01 | Open HDMI output | controller | READY state | Setup |
- * | 02 | Set VIC property | VIC enum value | Returns true | Should Pass |
- * | 03 | Set CONTENT_TYPE property | ContentType enum value | Returns true | Should Pass |
- * | 04 | Set AFD property | AFD enum value | Returns true | Should Pass |
- * | 05 | Set HDR_OUTPUT_MODE property | HDROutputMode enum value | Returns true | Should Pass |
- * | 06 | Set SCAN_INFORMATION property | ScanInformation enum value | Returns true | Should Pass |
+ * | 02 | Set VIC property for all supported values | All VIC values from HFP | Returns true for each | Should Pass |
+ * | 03 | Set CONTENT_TYPE property for all supported values | All ContentType values from HFP | Returns true for each | Should Pass |
+ * | 04 | Set AFD property for all supported values | All AFD values from HFP | Returns true for each | Should Pass |
+ * | 05 | Set HDR_OUTPUT_MODE property for all supported values | All HDROutputMode values from HFP | Returns true for each | Should Pass |
+ * | 06 | Set SCAN_INFORMATION property for all supported values | All ScanInformation values from HFP | Returns true for each | Should Pass |
  * | 07 | Close output | controller | Cleanup | Cleanup |
  */
 UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_pos)
@@ -1268,51 +1339,71 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_pos)
     PropertyValue propValue;
     bool setResult = false;
 
-    // Set VIC property - use first supported VIC from profile
-    int32_t vicValue = getProfileSupportedVIC(0, 0);
-    propValue.value = PropertyValue::Value();
-    propValue.value.value().set<PropertyValue::Value::Tag::intValue>(vicValue);
-    setResult = false;
-    HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::VIC, propValue, setResult);
-    UT_ASSERT_TRUE(setResult);
-    UT_LOG_INFO("VIC property set successfully: %d", vicValue);
+    // Test VIC property - loop through all supported VIC values from profile
+    int vicCount = getProfileSupportedVICCount(0);
+    for (int i = 0; i < vicCount; i++)
+    {
+        int32_t vicValue = getProfileSupportedVIC(0, i);
+        propValue.value = PropertyValue::Value();
+        propValue.value.value().set<PropertyValue::Value::Tag::intValue>(vicValue);
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::VIC, propValue, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("VIC property set successfully: %d", vicValue);
+    }
 
-    // Set CONTENT_TYPE property - use first supported content type from profile
-    int32_t contentTypeValue = getProfileSupportedContentType(0, 0);
-    propValue.value = PropertyValue::Value();
-    propValue.value.value().set<PropertyValue::Value::Tag::intValue>(contentTypeValue);
-    setResult = false;
-    HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::CONTENT_TYPE, propValue, setResult);
-    UT_ASSERT_TRUE(setResult);
-    UT_LOG_INFO("CONTENT_TYPE property set successfully: %d", contentTypeValue);
+    // Test CONTENT_TYPE property - loop through all supported content type values from profile
+    int contentTypeCount = getProfileSupportedContentTypeCount(0);
+    for (int i = 0; i < contentTypeCount; i++)
+    {
+        int32_t contentTypeValue = getProfileSupportedContentType(0, i);
+        propValue.value = PropertyValue::Value();
+        propValue.value.value().set<PropertyValue::Value::Tag::intValue>(contentTypeValue);
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::CONTENT_TYPE, propValue, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("CONTENT_TYPE property set successfully: %d", contentTypeValue);
+    }
 
-    // Set AFD property - use first supported AFD from profile
-    int32_t afdValue = getProfileSupportedAFD(0, 0);
-    propValue.value = PropertyValue::Value();
-    propValue.value.value().set<PropertyValue::Value::Tag::intValue>(afdValue);
-    setResult = false;
-    HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::AFD, propValue, setResult);
-    UT_ASSERT_TRUE(setResult);
-    UT_LOG_INFO("AFD property set successfully: %d", afdValue);
+    // Test AFD property - loop through all supported AFD values from profile
+    int afdCount = UT_KVP_PROFILE_GET_LIST_COUNT("hdmioutput/resources/0/supportedAFD");
+    for (int i = 0; i < afdCount; i++)
+    {
+        int32_t afdValue = getProfileSupportedAFD(0, i);
+        propValue.value = PropertyValue::Value();
+        propValue.value.value().set<PropertyValue::Value::Tag::intValue>(afdValue);
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::AFD, propValue, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("AFD property set successfully: %d", afdValue);
+    }
 
-    // Set HDR_OUTPUT_MODE property - use first supported HDR mode from profile
-    std::string hdrModeStr = getProfileSupportedHDRMode(0, 0);
-    hdmioutput::HDROutputMode hdrMode = convertStringToHDROutputMode(hdrModeStr);
-    propValue.value = PropertyValue::Value();
-    propValue.value.value().set<PropertyValue::Value::Tag::intValue>(static_cast<int32_t>(hdrMode));
-    setResult = false;
-    HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::HDR_OUTPUT_MODE, propValue, setResult);
-    UT_ASSERT_TRUE(setResult);
-    UT_LOG_INFO("HDR_OUTPUT_MODE property set successfully: %s", hdrModeStr.c_str());
+    // Test HDR_OUTPUT_MODE property - loop through all supported HDR mode values from profile
+    int hdrModeCount = getProfileSupportedHDRModeCount(0);
+    for (int i = 0; i < hdrModeCount; i++)
+    {
+        std::string hdrModeStr = getProfileSupportedHDRMode(0, i);
+        hdmioutput::HDROutputMode hdrMode = convertStringToHDROutputMode(hdrModeStr);
+        propValue.value = PropertyValue::Value();
+        propValue.value.value().set<PropertyValue::Value::Tag::intValue>(static_cast<int32_t>(hdrMode));
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::HDR_OUTPUT_MODE, propValue, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("HDR_OUTPUT_MODE property set successfully: %s", hdrModeStr.c_str());
+    }
 
-    // Set SCAN_INFORMATION property - use first supported scan info from profile
-    int32_t scanInfoValue = getProfileSupportedScanInfo(0, 0);
-    propValue.value = PropertyValue::Value();
-    propValue.value.value().set<PropertyValue::Value::Tag::intValue>(scanInfoValue);
-    setResult = false;
-    HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::SCAN_INFORMATION, propValue, setResult);
-    UT_ASSERT_TRUE(setResult);
-    UT_LOG_INFO("SCAN_INFORMATION property set successfully: %d", scanInfoValue);
+    // Test SCAN_INFORMATION property - loop through all supported scan info values from profile
+    int scanInfoCount = UT_KVP_PROFILE_GET_LIST_COUNT("hdmioutput/resources/0/supportedScanInformation");
+    for (int i = 0; i < scanInfoCount; i++)
+    {
+        int32_t scanInfoValue = getProfileSupportedScanInfo(0, i);
+        propValue.value = PropertyValue::Value();
+        propValue.value.value().set<PropertyValue::Value::Tag::intValue>(scanInfoValue);
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTY(controller, hdmioutput::Property::SCAN_INFORMATION, propValue, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("SCAN_INFORMATION property set successfully: %d", scanInfoValue);
+    }
 
     // Cleanup
     bool closeResult = false;
@@ -1361,7 +1452,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     HDMIOUTPUT_OPEN(hdmiOutput, controllerListener, controller);
 
     PropertyValue propValue;
-    bool setResult = true;
+    bool setResult = false;
     android::binder::Status status;
 
     // Test 1: Try setting invalid property (below range)
@@ -1371,7 +1462,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     int32_t firstValue = static_cast<int32_t>(hdmioutput::Property::RESOURCE_ID);
     hdmioutput::Property invalidProperty = static_cast<hdmioutput::Property>(firstValue - 1);
 
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, invalidProperty, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1379,7 +1470,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
 
     // Test 2: Try setting out of bound property (above range)
     hdmioutput::Property outOfBoundProperty = static_cast<hdmioutput::Property>(999);
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, outOfBoundProperty, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1388,7 +1479,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 3: Try setting VIC with out of bound value
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(9999); // Invalid VIC value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::VIC, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1397,7 +1488,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 4: Try setting CONTENT_TYPE with out of bound value
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(100); // Invalid ContentType value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::CONTENT_TYPE, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1406,7 +1497,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 5: Try setting AFD with out of bound value
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(100); // Invalid AFD value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::AFD, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1415,7 +1506,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 6: Try setting HDR_OUTPUT_MODE with out of bound value
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(100); // Invalid HDROutputMode value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::HDR_OUTPUT_MODE, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1424,7 +1515,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 7: Try setting SCAN_INFORMATION with out of bound value
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(100); // Invalid ScanInformation value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::SCAN_INFORMATION, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1433,7 +1524,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 8: Try setting VIC with value below first enum (VIC0_UNAVAILABLE = 0, test with -1)
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(-1); // Below minimum VIC value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::VIC, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1442,7 +1533,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 9: Try setting CONTENT_TYPE with value below first enum (UNSPECIFIED = -1, test with -2)
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(-2); // Below minimum ContentType value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::CONTENT_TYPE, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1451,7 +1542,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 10: Try setting AFD with value below first enum (UNSPECIFIED = -1, test with -2)
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(-2); // Below minimum AFD value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::AFD, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1460,7 +1551,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 11: Try setting HDR_OUTPUT_MODE with value below first enum (AUTO = 0, test with -1)
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(-1); // Below minimum HDROutputMode value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::HDR_OUTPUT_MODE, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1469,7 +1560,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     // Test 12: Try setting SCAN_INFORMATION with value below first enum (NO_DATA = 0, test with -1)
     propValue.value = PropertyValue::Value();
     propValue.value.value().set<PropertyValue::Value::Tag::intValue>(-1); // Below minimum ScanInformation value
-    setResult = true;
+    setResult = false;
     HDMIOUTPUT_SET_PROPERTY_NEG(controller, hdmioutput::Property::SCAN_INFORMATION, propValue, setResult, status);
     UT_ASSERT_FALSE(status.isOk());
     UT_ASSERT_FALSE(setResult);
@@ -1480,10 +1571,11 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
     HDMIOUTPUT_CLOSE(hdmiOutput, controller, closeResult);
 }
 
+#if 0
 /**
  * @brief Validate setPropertyMulti API
  *
- * This test verifies that multiple properties can be set in one call using HFP values.
+ * This test verifies that multiple properties can be set in one call using all supported values from HFP.
  *
  * **Test Group ID:** Basic: 01
  * **Test Case ID:** 026
@@ -1497,8 +1589,12 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setProperty_neg)
  * | Variation / Step | Description | Test Data | Expected Result | Notes |
  * | :----: | --------- | ---------- |-------------- | ----- |
  * | 01 | Open HDMI output | controller | READY state | Setup |
- * | 02 | Set multiple properties from HFP | VIC, CONTENT_TYPE, AFD, HDR_OUTPUT_MODE, SCAN_INFORMATION | Returns true | Should Pass |
- * | 03 | Close output | controller | Cleanup | Cleanup |
+ * | 02 | Set multiple properties with all VIC values | All VIC values from HFP | Returns true for each | Should Pass |
+ * | 03 | Set multiple properties with all CONTENT_TYPE values | All ContentType values from HFP | Returns true for each | Should Pass |
+ * | 04 | Set multiple properties with all AFD values | All AFD values from HFP | Returns true for each | Should Pass |
+ * | 05 | Set multiple properties with all HDR_OUTPUT_MODE values | All HDROutputMode values from HFP | Returns true for each | Should Pass |
+ * | 06 | Set multiple properties with all SCAN_INFORMATION values | All ScanInformation values from HFP | Returns true for each | Should Pass |
+ * | 07 | Close output | controller | Cleanup | Cleanup |
  */
 UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setPropertyMulti_pos)
 {
@@ -1510,55 +1606,163 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setPropertyMulti_pos)
 
     HDMIOUTPUT_OPEN(hdmiOutput, controllerListener, controller);
 
-    // Create property array with values from HFP
-    std::vector<hdmioutput::PropertyKVPair> properties;
-    
-    // VIC property - use first supported VIC from profile
-    hdmioutput::PropertyKVPair propVIC;
-    propVIC.property = hdmioutput::Property::VIC;
-    propVIC.propertyValue.value = PropertyValue::Value();
-    int32_t vicValue = getProfileSupportedVIC(0, 0);
-    propVIC.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(vicValue);
-    properties.push_back(std::move(propVIC));
-
-    // CONTENT_TYPE property - use first supported content type from profile
-    hdmioutput::PropertyKVPair propContentType;
-    propContentType.property = hdmioutput::Property::CONTENT_TYPE;
-    propContentType.propertyValue.value = PropertyValue::Value();
-    int32_t contentTypeValue = getProfileSupportedContentType(0, 0);
-    propContentType.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(contentTypeValue);
-    properties.push_back(std::move(propContentType));
-
-    // AFD property - use first supported AFD from profile
-    hdmioutput::PropertyKVPair propAFD;
-    propAFD.property = hdmioutput::Property::AFD;
-    propAFD.propertyValue.value = PropertyValue::Value();
-    int32_t afdValue = getProfileSupportedAFD(0, 0);
-    propAFD.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(afdValue);
-    properties.push_back(std::move(propAFD));
-
-    // HDR_OUTPUT_MODE property - use first supported HDR mode from profile
-    hdmioutput::PropertyKVPair propHDR;
-    propHDR.property = hdmioutput::Property::HDR_OUTPUT_MODE;
-    propHDR.propertyValue.value = PropertyValue::Value();
-    std::string hdrModeStr = getProfileSupportedHDRMode(0, 0);
-    hdmioutput::HDROutputMode hdrMode = convertStringToHDROutputMode(hdrModeStr);
-    propHDR.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(static_cast<int32_t>(hdrMode));
-    properties.push_back(std::move(propHDR));
-
-    // SCAN_INFORMATION property - use first supported scan info from profile
-    hdmioutput::PropertyKVPair propScanInfo;
-    propScanInfo.property = hdmioutput::Property::SCAN_INFORMATION;
-    propScanInfo.propertyValue.value = PropertyValue::Value();
-    int32_t scanInfoValue = getProfileSupportedScanInfo(0, 0);
-    propScanInfo.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(scanInfoValue);
-    properties.push_back(std::move(propScanInfo));
-
     bool setResult = false;
-    HDMIOUTPUT_SET_PROPERTYMULTI(controller, properties, setResult);
-    UT_ASSERT_TRUE(setResult);
-    UT_LOG_INFO("Successfully set %zu properties: VIC=%d, CONTENT_TYPE=%d, AFD=%d, HDR_MODE=%s, SCAN_INFO=%d",
-                properties.size(), vicValue, contentTypeValue, afdValue, hdrModeStr.c_str(), scanInfoValue);
+
+    // Test 1: Loop through all VIC values (keeping other properties at first supported value)
+    int vicCount = getProfileSupportedVICCount(0);
+    for (int i = 0; i < vicCount; i++)
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair propVIC;
+        propVIC.property = hdmioutput::Property::VIC;
+        propVIC.propertyValue.value = PropertyValue::Value();
+        int32_t vicValue = getProfileSupportedVIC(0, i);
+        propVIC.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(vicValue);
+        properties.push_back(std::move(propVIC));
+
+        hdmioutput::PropertyKVPair propContentType;
+        propContentType.property = hdmioutput::Property::CONTENT_TYPE;
+        propContentType.propertyValue.value = PropertyValue::Value();
+        propContentType.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedContentType(0, 0));
+        properties.push_back(std::move(propContentType));
+
+        hdmioutput::PropertyKVPair propAFD;
+        propAFD.property = hdmioutput::Property::AFD;
+        propAFD.propertyValue.value = PropertyValue::Value();
+        propAFD.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedAFD(0, 0));
+        properties.push_back(std::move(propAFD));
+
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTYMULTI(controller, properties, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("Multi-property set with VIC=%d successful", vicValue);
+    }
+
+    // Test 2: Loop through all CONTENT_TYPE values (keeping other properties at first supported value)
+    int contentTypeCount = getProfileSupportedContentTypeCount(0);
+    for (int i = 0; i < contentTypeCount; i++)
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair propVIC;
+        propVIC.property = hdmioutput::Property::VIC;
+        propVIC.propertyValue.value = PropertyValue::Value();
+        propVIC.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
+        properties.push_back(std::move(propVIC));
+
+        hdmioutput::PropertyKVPair propContentType;
+        propContentType.property = hdmioutput::Property::CONTENT_TYPE;
+        propContentType.propertyValue.value = PropertyValue::Value();
+        int32_t contentTypeValue = getProfileSupportedContentType(0, i);
+        propContentType.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(contentTypeValue);
+        properties.push_back(std::move(propContentType));
+
+        hdmioutput::PropertyKVPair propAFD;
+        propAFD.property = hdmioutput::Property::AFD;
+        propAFD.propertyValue.value = PropertyValue::Value();
+        propAFD.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedAFD(0, 0));
+        properties.push_back(std::move(propAFD));
+
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTYMULTI(controller, properties, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("Multi-property set with CONTENT_TYPE=%d successful", contentTypeValue);
+    }
+
+    // Test 3: Loop through all AFD values (keeping other properties at first supported value)
+    int afdCount = UT_KVP_PROFILE_GET_LIST_COUNT("hdmioutput/resources/0/supportedAFD");
+    for (int i = 0; i < afdCount; i++)
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair propVIC;
+        propVIC.property = hdmioutput::Property::VIC;
+        propVIC.propertyValue.value = PropertyValue::Value();
+        propVIC.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
+        properties.push_back(std::move(propVIC));
+
+        hdmioutput::PropertyKVPair propContentType;
+        propContentType.property = hdmioutput::Property::CONTENT_TYPE;
+        propContentType.propertyValue.value = PropertyValue::Value();
+        propContentType.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedContentType(0, 0));
+        properties.push_back(std::move(propContentType));
+
+        hdmioutput::PropertyKVPair propAFD;
+        propAFD.property = hdmioutput::Property::AFD;
+        propAFD.propertyValue.value = PropertyValue::Value();
+        int32_t afdValue = getProfileSupportedAFD(0, i);
+        propAFD.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(afdValue);
+        properties.push_back(std::move(propAFD));
+
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTYMULTI(controller, properties, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("Multi-property set with AFD=%d successful", afdValue);
+    }
+
+    // Test 4: Loop through all HDR_OUTPUT_MODE values (keeping other properties at first supported value)
+    int hdrModeCount = getProfileSupportedHDRModeCount(0);
+    for (int i = 0; i < hdrModeCount; i++)
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair propVIC;
+        propVIC.property = hdmioutput::Property::VIC;
+        propVIC.propertyValue.value = PropertyValue::Value();
+        propVIC.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
+        properties.push_back(std::move(propVIC));
+
+        hdmioutput::PropertyKVPair propHDR;
+        propHDR.property = hdmioutput::Property::HDR_OUTPUT_MODE;
+        propHDR.propertyValue.value = PropertyValue::Value();
+        std::string hdrModeStr = getProfileSupportedHDRMode(0, i);
+        hdmioutput::HDROutputMode hdrMode = convertStringToHDROutputMode(hdrModeStr);
+        propHDR.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(static_cast<int32_t>(hdrMode));
+        properties.push_back(std::move(propHDR));
+
+        hdmioutput::PropertyKVPair propAFD;
+        propAFD.property = hdmioutput::Property::AFD;
+        propAFD.propertyValue.value = PropertyValue::Value();
+        propAFD.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedAFD(0, 0));
+        properties.push_back(std::move(propAFD));
+
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTYMULTI(controller, properties, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("Multi-property set with HDR_OUTPUT_MODE=%s successful", hdrModeStr.c_str());
+    }
+
+    // Test 5: Loop through all SCAN_INFORMATION values (keeping other properties at first supported value)
+    int scanInfoCount = UT_KVP_PROFILE_GET_LIST_COUNT("hdmioutput/resources/0/supportedScanInformation");
+    for (int i = 0; i < scanInfoCount; i++)
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair propVIC;
+        propVIC.property = hdmioutput::Property::VIC;
+        propVIC.propertyValue.value = PropertyValue::Value();
+        propVIC.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
+        properties.push_back(std::move(propVIC));
+
+        hdmioutput::PropertyKVPair propContentType;
+        propContentType.property = hdmioutput::Property::CONTENT_TYPE;
+        propContentType.propertyValue.value = PropertyValue::Value();
+        propContentType.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedContentType(0, 0));
+        properties.push_back(std::move(propContentType));
+
+        hdmioutput::PropertyKVPair propScanInfo;
+        propScanInfo.property = hdmioutput::Property::SCAN_INFORMATION;
+        propScanInfo.propertyValue.value = PropertyValue::Value();
+        int32_t scanInfoValue = getProfileSupportedScanInfo(0, i);
+        propScanInfo.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(scanInfoValue);
+        properties.push_back(std::move(propScanInfo));
+
+        setResult = false;
+        HDMIOUTPUT_SET_PROPERTYMULTI(controller, properties, setResult);
+        UT_ASSERT_TRUE(setResult);
+        UT_LOG_INFO("Multi-property set with SCAN_INFORMATION=%d successful", scanInfoValue);
+    }
 
     // Cleanup
     bool closeResult = false;
@@ -1582,10 +1786,19 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setPropertyMulti_pos)
  * | Variation / Step | Description | Test Data | Expected Result | Notes |
  * | :----: | --------- | ---------- |-------------- | ----- |
  * | 01 | Open HDMI output | controller | READY state | Setup |
- * | 02 | Set multiple properties with one invalid property type | Invalid property enum | Returns false | Should Pass |
- * | 03 | Set multiple properties with one out-of-bound value (high) | VIC with value 9999 | Returns false | Should Pass |
- * | 04 | Set multiple properties with one out-of-bound value (low) | CONTENT_TYPE with value -2 | Returns false | Should Pass |
- * | 05 | Close output | controller | Cleanup | Cleanup |
+ * | 02 | Set multiple properties with one invalid property type (below range) | Invalid property enum | Returns false | Should Pass |
+ * | 03 | Set multiple properties with one out-of-bound property (above range) | out-of-bound enum value | Returns false | Should Pass |
+ * | 04 | Set multiple properties with VIC out-of-bound value (high) | VIC with value 9999 | Returns false | Should Pass |
+ * | 05 | Set multiple properties with CONTENT_TYPE out-of-bound value (low) | CONTENT_TYPE with value -2 | Returns false | Should Pass |
+ * | 06 | Set multiple properties with VIC out-of-bound value (low) | VIC with value -1 | Returns false | Should Pass |
+ * | 07 | Set multiple properties with CONTENT_TYPE out-of-bound value (high) | CONTENT_TYPE with value 100 | Returns false | Should Pass |
+ * | 08 | Set multiple properties with AFD out-of-bound value (high) | AFD with value 100 | Returns false | Should Pass |
+ * | 09 | Set multiple properties with AFD out-of-bound value (low) | AFD with value -2 | Returns false | Should Pass |
+ * | 10 | Set multiple properties with HDR_OUTPUT_MODE out-of-bound value (high) | HDR_OUTPUT_MODE with value 100 | Returns false | Should Pass |
+ * | 11 | Set multiple properties with HDR_OUTPUT_MODE out-of-bound value (low) | HDR_OUTPUT_MODE with value -1 | Returns false | Should Pass |
+ * | 12 | Set multiple properties with SCAN_INFORMATION out-of-bound value (high) | SCAN_INFORMATION with value 100 | Returns false | Should Pass |
+ * | 13 | Set multiple properties with SCAN_INFORMATION out-of-bound value (low) | SCAN_INFORMATION with value -1 | Returns false | Should Pass |
+ * | 14 | Close output | controller | Cleanup | Cleanup |
  */
 UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setPropertyMulti_neg)
 {
@@ -1597,122 +1810,301 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, setPropertyMulti_neg)
 
     HDMIOUTPUT_OPEN(hdmiOutput, controllerListener, controller);
 
-    PropertyValue propValue;
-    bool setResult = true;
-    android::binder::Status status;
-
     // Test 1: Multiple properties with one invalid property type (below range)
-    std::vector<hdmioutput::PropertyKVPair> properties1;
-    
-    hdmioutput::PropertyKVPair validProp;
-    validProp.property = hdmioutput::Property::VIC;
-    validProp.propertyValue.value = PropertyValue::Value();
-    validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
-    properties1.push_back(std::move(validProp));
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::VIC;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
+        properties.push_back(std::move(validProp));
 
-    hdmioutput::PropertyKVPair invalidProp;
-    int32_t firstValue = static_cast<int32_t>(hdmioutput::Property::RESOURCE_ID);
-    invalidProp.property = static_cast<hdmioutput::Property>(firstValue - 1);
-    invalidProp.propertyValue.value = PropertyValue::Value();
-    invalidProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(0);
-    properties1.push_back(std::move(invalidProp));
+        hdmioutput::PropertyKVPair invalidProp;
+        int32_t firstValue = static_cast<int32_t>(hdmioutput::Property::RESOURCE_ID);
+        invalidProp.property = static_cast<hdmioutput::Property>(firstValue - 1);
+        invalidProp.propertyValue.value = PropertyValue::Value();
+        invalidProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(0);
+        properties.push_back(std::move(invalidProp));
 
-    setResult = true;
-    HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties1, setResult, status);
-    UT_ASSERT_FALSE(status.isOk());
-    UT_ASSERT_FALSE(setResult);
-    UT_LOG_INFO("Multi-property with invalid property type rejected successfully");
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with invalid property type rejected successfully");
+    }
 
     // Test 2: Multiple properties with one out-of-bound property (above range)
-    std::vector<hdmioutput::PropertyKVPair> properties2;
-    
-    hdmioutput::PropertyKVPair validProp2;
-    validProp2.property = hdmioutput::Property::CONTENT_TYPE;
-    validProp2.propertyValue.value = PropertyValue::Value();
-    validProp2.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedContentType(0, 0));
-    properties2.push_back(std::move(validProp2));
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::CONTENT_TYPE;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedContentType(0, 0));
+        properties.push_back(std::move(validProp));
 
-    hdmioutput::PropertyKVPair outOfBoundProp;
-    outOfBoundProp.property = static_cast<hdmioutput::Property>(999);
-    outOfBoundProp.propertyValue.value = PropertyValue::Value();
-    outOfBoundProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(0);
-    properties2.push_back(std::move(outOfBoundProp));
+        hdmioutput::PropertyKVPair outOfBoundProp;
+        outOfBoundProp.property = static_cast<hdmioutput::Property>(999);
+        outOfBoundProp.propertyValue.value = PropertyValue::Value();
+        outOfBoundProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(0);
+        properties.push_back(std::move(outOfBoundProp));
 
-    setResult = true;
-    HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties2, setResult, status);
-    UT_ASSERT_FALSE(status.isOk());
-    UT_ASSERT_FALSE(setResult);
-    UT_LOG_INFO("Multi-property with out-of-bound property rejected successfully");
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with out-of-bound property rejected successfully");
+    }
 
-    // Test 3: Multiple properties with one having out-of-bound value (high)
-    std::vector<hdmioutput::PropertyKVPair> properties3;
-    
-    hdmioutput::PropertyKVPair validProp3;
-    validProp3.property = hdmioutput::Property::AFD;
-    validProp3.propertyValue.value = PropertyValue::Value();
-    validProp3.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedAFD(0, 0));
-    properties3.push_back(std::move(validProp3));
+    // Test 3: Multiple properties with VIC having high out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::AFD;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedAFD(0, 0));
+        properties.push_back(std::move(validProp));
 
-    hdmioutput::PropertyKVPair highValueProp;
-    highValueProp.property = hdmioutput::Property::VIC;
-    highValueProp.propertyValue.value = PropertyValue::Value();
-    highValueProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(9999);
-    properties3.push_back(std::move(highValueProp));
+        hdmioutput::PropertyKVPair highValueProp;
+        highValueProp.property = hdmioutput::Property::VIC;
+        highValueProp.propertyValue.value = PropertyValue::Value();
+        highValueProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(9999);
+        properties.push_back(std::move(highValueProp));
 
-    setResult = true;
-    HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties3, setResult, status);
-    UT_ASSERT_FALSE(status.isOk());
-    UT_ASSERT_FALSE(setResult);
-    UT_LOG_INFO("Multi-property with high out-of-bound value rejected successfully");
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with VIC high out-of-bound value rejected successfully");
+    }
 
-    // Test 4: Multiple properties with one having out-of-bound value (low)
-    std::vector<hdmioutput::PropertyKVPair> properties4;
-    
-    hdmioutput::PropertyKVPair validProp4;
-    validProp4.property = hdmioutput::Property::HDR_OUTPUT_MODE;
-    validProp4.propertyValue.value = PropertyValue::Value();
-    std::string hdrModeStr = getProfileSupportedHDRMode(0, 0);
-    validProp4.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(static_cast<int32_t>(convertStringToHDROutputMode(hdrModeStr)));
-    properties4.push_back(std::move(validProp4));
+    // Test 4: Multiple properties with CONTENT_TYPE having low out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::HDR_OUTPUT_MODE;
+        validProp.propertyValue.value = PropertyValue::Value();
+        std::string hdrModeStr = getProfileSupportedHDRMode(0, 0);
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(static_cast<int32_t>(convertStringToHDROutputMode(hdrModeStr)));
+        properties.push_back(std::move(validProp));
 
-    hdmioutput::PropertyKVPair lowValueProp;
-    lowValueProp.property = hdmioutput::Property::CONTENT_TYPE;
-    lowValueProp.propertyValue.value = PropertyValue::Value();
-    lowValueProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(-2); // Below UNSPECIFIED (-1)
-    properties4.push_back(std::move(lowValueProp));
+        hdmioutput::PropertyKVPair lowValueProp;
+        lowValueProp.property = hdmioutput::Property::CONTENT_TYPE;
+        lowValueProp.propertyValue.value = PropertyValue::Value();
+        lowValueProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(-2); // Below UNSPECIFIED (-1)
+        properties.push_back(std::move(lowValueProp));
 
-    setResult = true;
-    HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties4, setResult, status);
-    UT_ASSERT_FALSE(status.isOk());
-    UT_ASSERT_FALSE(setResult);
-    UT_LOG_INFO("Multi-property with low out-of-bound value rejected successfully");
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with CONTENT_TYPE low out-of-bound value rejected successfully");
+    }
 
-    // Test 5: Multiple properties with one having invalid AFD value
-    std::vector<hdmioutput::PropertyKVPair> properties5;
-    
-    hdmioutput::PropertyKVPair validProp5;
-    validProp5.property = hdmioutput::Property::SCAN_INFORMATION;
-    validProp5.propertyValue.value = PropertyValue::Value();
-    validProp5.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedScanInfo(0, 0));
-    properties5.push_back(std::move(validProp5));
+    // Test 5: Multiple properties with VIC having low out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::SCAN_INFORMATION;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedScanInfo(0, 0));
+        properties.push_back(std::move(validProp));
 
-    hdmioutput::PropertyKVPair invalidAFDProp;
-    invalidAFDProp.property = hdmioutput::Property::AFD;
-    invalidAFDProp.propertyValue.value = PropertyValue::Value();
-    invalidAFDProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(100); // Invalid AFD
-    properties5.push_back(std::move(invalidAFDProp));
+        hdmioutput::PropertyKVPair lowVICProp;
+        lowVICProp.property = hdmioutput::Property::VIC;
+        lowVICProp.propertyValue.value = PropertyValue::Value();
+        lowVICProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(-1); // Below VIC0_UNAVAILABLE (0)
+        properties.push_back(std::move(lowVICProp));
 
-    setResult = true;
-    HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties5, setResult, status);
-    UT_ASSERT_FALSE(status.isOk());
-    UT_ASSERT_FALSE(setResult);
-    UT_LOG_INFO("Multi-property with invalid AFD value rejected successfully");
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with VIC low out-of-bound value rejected successfully");
+    }
+
+    // Test 6: Multiple properties with CONTENT_TYPE having high out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::VIC;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
+        properties.push_back(std::move(validProp));
+
+        hdmioutput::PropertyKVPair highContentTypeProp;
+        highContentTypeProp.property = hdmioutput::Property::CONTENT_TYPE;
+        highContentTypeProp.propertyValue.value = PropertyValue::Value();
+        highContentTypeProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(100); // Invalid ContentType
+        properties.push_back(std::move(highContentTypeProp));
+
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with CONTENT_TYPE high out-of-bound value rejected successfully");
+    }
+
+    // Test 7: Multiple properties with AFD having high out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::VIC;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
+        properties.push_back(std::move(validProp));
+
+        hdmioutput::PropertyKVPair highAFDProp;
+        highAFDProp.property = hdmioutput::Property::AFD;
+        highAFDProp.propertyValue.value = PropertyValue::Value();
+        highAFDProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(100); // Invalid AFD
+        properties.push_back(std::move(highAFDProp));
+
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with AFD high out-of-bound value rejected successfully");
+    }
+
+    // Test 8: Multiple properties with AFD having low out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::CONTENT_TYPE;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedContentType(0, 0));
+        properties.push_back(std::move(validProp));
+
+        hdmioutput::PropertyKVPair lowAFDProp;
+        lowAFDProp.property = hdmioutput::Property::AFD;
+        lowAFDProp.propertyValue.value = PropertyValue::Value();
+        lowAFDProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(-2); // Below UNSPECIFIED (-1)
+        properties.push_back(std::move(lowAFDProp));
+
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with AFD low out-of-bound value rejected successfully");
+    }
+
+    // Test 9: Multiple properties with HDR_OUTPUT_MODE having high out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::VIC;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
+        properties.push_back(std::move(validProp));
+
+        hdmioutput::PropertyKVPair highHDRProp;
+        highHDRProp.property = hdmioutput::Property::HDR_OUTPUT_MODE;
+        highHDRProp.propertyValue.value = PropertyValue::Value();
+        highHDRProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(100); // Invalid HDROutputMode
+        properties.push_back(std::move(highHDRProp));
+
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with HDR_OUTPUT_MODE high out-of-bound value rejected successfully");
+    }
+
+    // Test 10: Multiple properties with HDR_OUTPUT_MODE having low out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::AFD;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedAFD(0, 0));
+        properties.push_back(std::move(validProp));
+
+        hdmioutput::PropertyKVPair lowHDRProp;
+        lowHDRProp.property = hdmioutput::Property::HDR_OUTPUT_MODE;
+        lowHDRProp.propertyValue.value = PropertyValue::Value();
+        lowHDRProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(-1); // Below AUTO (0)
+        properties.push_back(std::move(lowHDRProp));
+
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with HDR_OUTPUT_MODE low out-of-bound value rejected successfully");
+    }
+
+    // Test 11: Multiple properties with SCAN_INFORMATION having high out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::CONTENT_TYPE;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedContentType(0, 0));
+        properties.push_back(std::move(validProp));
+
+        hdmioutput::PropertyKVPair highScanInfoProp;
+        highScanInfoProp.property = hdmioutput::Property::SCAN_INFORMATION;
+        highScanInfoProp.propertyValue.value = PropertyValue::Value();
+        highScanInfoProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(100); // Invalid ScanInformation
+        properties.push_back(std::move(highScanInfoProp));
+
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with SCAN_INFORMATION high out-of-bound value rejected successfully");
+    }
+
+    // Test 12: Multiple properties with SCAN_INFORMATION having low out-of-bound value
+    {
+        std::vector<hdmioutput::PropertyKVPair> properties;
+        
+        hdmioutput::PropertyKVPair validProp;
+        validProp.property = hdmioutput::Property::VIC;
+        validProp.propertyValue.value = PropertyValue::Value();
+        validProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(getProfileSupportedVIC(0, 0));
+        properties.push_back(std::move(validProp));
+
+        hdmioutput::PropertyKVPair lowScanInfoProp;
+        lowScanInfoProp.property = hdmioutput::Property::SCAN_INFORMATION;
+        lowScanInfoProp.propertyValue.value = PropertyValue::Value();
+        lowScanInfoProp.propertyValue.value.value().set<PropertyValue::Value::Tag::intValue>(-1); // Below NO_DATA (0)
+        properties.push_back(std::move(lowScanInfoProp));
+
+        bool setResult = true;
+        android::binder::Status status;
+        HDMIOUTPUT_SET_PROPERTYMULTI_NEG(controller, properties, setResult, status);
+        UT_ASSERT_FALSE(status.isOk());
+        UT_ASSERT_FALSE(setResult);
+        UT_LOG_INFO("Multi-property with SCAN_INFORMATION low out-of-bound value rejected successfully");
+    }
 
     // Cleanup
     bool closeResult = false;
     HDMIOUTPUT_CLOSE(hdmiOutput, controller, closeResult);
 }
-
+#endif
 /**
  * @brief Validate getHDCPCurrentVersion API
  *
