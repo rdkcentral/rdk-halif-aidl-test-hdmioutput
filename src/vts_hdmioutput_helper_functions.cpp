@@ -88,6 +88,25 @@ const ut_control_keyStringMapping_t statusHdmiOutputException_mapTable[] =
     {NULL, -1}
 };
 
+/* HDCPProtocolVersion */
+const ut_control_keyStringMapping_t hdcpProtocolVersion_mapTable[] =
+{
+    {"UNDEFINED",    (int32_t) HDCPProtocolVersion::UNDEFINED},
+    {"VERSION_1_X",  (int32_t) HDCPProtocolVersion::VERSION_1_X},
+    {"VERSION_2_X",  (int32_t) HDCPProtocolVersion::VERSION_2_X},
+    {NULL, -1}
+};
+
+/* HDCPStatus */
+const ut_control_keyStringMapping_t hdcpStatus_mapTable[] =
+{
+    {"UNKNOWN",                     (int32_t) hdmioutput::HDCPStatus::UNKNOWN},
+    {"UNAUTHENTICATED",             (int32_t) hdmioutput::HDCPStatus::UNAUTHENTICATED},
+    {"AUTHENTICATION_IN_PROGRESS",  (int32_t) hdmioutput::HDCPStatus::AUTHENTICATION_IN_PROGRESS},
+    {"AUTHENTICATED",               (int32_t) hdmioutput::HDCPStatus::AUTHENTICATED},
+    {NULL, -1}
+};
+
 std::string vecIntToString(std::vector<int32_t>& addrs)
 {
     std::string s;
@@ -299,6 +318,11 @@ int getProfileSupportedHDRModeCount(int resourceIndex) {
     return UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
 }
 
+int getProfileSupportedHDCPProtocolVersionCount(int resourceIndex) {
+    std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedHDCPProtocolVersions";
+    return UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
+}
+
 int32_t getProfileSupportedVIC(int resourceIndex, int vicIndex) {
     char vicString[UT_KVP_MAX_ELEMENT_SIZE];
     std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedVICs." + std::to_string(vicIndex);
@@ -371,6 +395,47 @@ std::string getProfileSupportedSPDSource(int resourceIndex, int sourceIndex) {
     std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedSPDSources." + std::to_string(sourceIndex);
     UT_KVP_PROFILE_GET_STRING(key.c_str(), sourceString);
     return std::string(sourceString);
+}
+
+std::string getProfileSupportedHDCPProtocolVersion(int resourceIndex, int versionIndex) {
+    char versionString[UT_KVP_MAX_ELEMENT_SIZE];
+    std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedHDCPProtocolVersions." + std::to_string(versionIndex);
+    UT_KVP_PROFILE_GET_STRING(key.c_str(), versionString);
+    return std::string(versionString);
+}
+
+HDCPProtocolVersion getProfileMaxSupportedHDCPProtocolVersion(int resourceIndex) {
+    int versionCount = getProfileSupportedHDCPProtocolVersionCount(resourceIndex);
+    HDCPProtocolVersion maxVersion = HDCPProtocolVersion::UNDEFINED;
+    
+    for (int i = 0; i < versionCount; i++) {
+        std::string versionStr = getProfileSupportedHDCPProtocolVersion(resourceIndex, i);
+        HDCPProtocolVersion currentVersion = convertStringToHDCPProtocolVersions(versionStr);
+        
+        // VERSION_2_X (2) > VERSION_1_X (1) > UNDEFINED (0)
+        if (static_cast<int>(currentVersion) > static_cast<int>(maxVersion)) {
+            maxVersion = currentVersion;
+        }
+    }
+    
+    return maxVersion;
+}
+
+hdmioutput::Property convertStringToProperty(const std::string& propertyStr) {
+    if (propertyStr == "VIC")
+        return hdmioutput::Property::VIC;
+    else if (propertyStr == "CONTENT_TYPE")
+        return hdmioutput::Property::CONTENT_TYPE;
+    else if (propertyStr == "AFD")
+        return hdmioutput::Property::AFD;
+    else if (propertyStr == "HDR_OUTPUT_MODE")
+        return hdmioutput::Property::HDR_OUTPUT_MODE;
+    else if (propertyStr == "SCAN_INFORMATION")
+        return hdmioutput::Property::SCAN_INFORMATION;
+    else if (propertyStr == "RESOURCE_ID")
+        return hdmioutput::Property::RESOURCE_ID;
+    else
+        return hdmioutput::Property::RESOURCE_ID; // Default fallback
 }
 
 /** @} */ // End of HDMIOUTPUT_HALTEST_HELPER

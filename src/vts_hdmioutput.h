@@ -93,6 +93,8 @@ using android::sp;
 using android::String16;
 using android::defaultServiceManager;
 using android::binder::Status;
+using namespace std;
+using namespace std::chrono;
 
 using namespace com::rdk::hal;
 using namespace com::rdk::hal::hdmioutput;
@@ -477,31 +479,57 @@ public:
             ::com::rdk::hal::hdmioutput::HDCPProtocolVersion hdcpProtocolVersion) override;
     ::android::binder::Status onEDID(const ::std::vector<uint8_t>& edid) override;
 
+    // Set the associated HDMIOutput for state checking
+    void setHDMIOutput(sp<com::rdk::hal::hdmioutput::IHDMIOutput> hdmiOutput) {
+        mHDMIOutput = hdmiOutput;
+    }
+
     // Event retrieval methods
-    bool getNextHPDStateChange(bool& state);
-    bool getNextFrameRateChange();
-    bool getNextHDCPStatusChange(std::pair<::com::rdk::hal::hdmioutput::HDCPStatus, ::com::rdk::hal::hdmioutput::HDCPProtocolVersion>& hdcpInfo);
-    bool getNextEDID(::std::vector<uint8_t>& edid);
+    bool getNextHPDStateChange(bool& state, chrono::milliseconds timeout = chrono::milliseconds(0));
+    bool getNextFrameRateChange(chrono::milliseconds timeout = chrono::milliseconds(0));
+    bool getNextHDCPStatusChange(std::pair<::com::rdk::hal::hdmioutput::HDCPStatus, ::com::rdk::hal::hdmioutput::HDCPProtocolVersion>& hdcpInfo, chrono::milliseconds timeout = chrono::milliseconds(0));
+    bool getNextEDID(::std::vector<uint8_t>& edid, chrono::milliseconds timeout = chrono::milliseconds(0));
+    bool getNextVICChange(int32_t& vic, chrono::milliseconds timeout = chrono::milliseconds(0));
+    
+    // Synchronization helpers - wait for specific callback counts
+    bool waitForHPDCount(int32_t count, chrono::milliseconds timeout);
+    bool waitForHDCPStatusCount(int32_t count, chrono::milliseconds timeout);
+    bool waitForEDIDCount(int32_t count, chrono::milliseconds timeout);
+    bool waitForFrameRateCount(int32_t count, chrono::milliseconds timeout);
     
     // Utility methods
     void reset();
+    void clearHPDQueue();
+    void clearHDCPStatusQueue();
+    void clearEDIDQueue();
+    void clearFrameRateQueue();
     bool hasHPDStateChanged() const;
     bool hasFrameRateChanged() const;
     bool hasHDCPStatusChanged() const;
     bool hasEDIDReceived() const;
 
 private:
+    sp<com::rdk::hal::hdmioutput::IHDMIOutput> mHDMIOutput;
+    
     mutable std::mutex mHPDStateMutex;
+    std::condition_variable mHPDStateCV;
     std::queue<bool> mHPDStateQueue;
     
     mutable std::mutex mFrameRateMutex;
+    std::condition_variable mFrameRateCV;
     std::queue<bool> mFrameRateQueue;
     
     mutable std::mutex mHDCPStatusMutex;
+    std::condition_variable mHDCPStatusCV;
     std::queue<std::pair<::com::rdk::hal::hdmioutput::HDCPStatus, ::com::rdk::hal::hdmioutput::HDCPProtocolVersion>> mHDCPStatusQueue;
     
     mutable std::mutex mEDIDMutex;
+    std::condition_variable mEDIDCV;
     std::queue<::std::vector<uint8_t>> mEDIDQueue;
+    
+    mutable std::mutex mVICChangeMutex;
+    std::condition_variable mVICChangeCV;
+    std::queue<int32_t> mVICChangeQueue;
     
     // Legacy single-value storage for backward compatibility
     bool m_hpdStateChanged{false};

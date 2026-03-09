@@ -234,7 +234,7 @@ install_test()
     install -t ${INSTALL_PATH} run.sh
 
     cp -r ${PROFILES_DIR} ${INSTALL_PATH}
-    #cp -r "${TOP}/test_configuration" ${INSTALL_PATH}
+    cp -r "${TOP}/test_configuration" ${INSTALL_PATH}
     cp -r "${TOP}/vcomponent/vcomponent_configurations" ${INSTALL_PATH}
     cp -r "${TOP}/vcomponent/hdmioutput_post_command.sh" ${INSTALL_PATH}
 

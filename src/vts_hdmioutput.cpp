@@ -90,9 +90,8 @@ bool HDMIOutputEventListener::getNextStateChanges(std::pair<::com::rdk::hal::hdm
 void HDMIOutputEventListener::reset() {
     std::lock_guard<std::mutex> lock(mStateChangeMutex);
     // Clear the queue
-    while (!mStateChangeQueue.empty()) {
-        mStateChangeQueue.pop();
-    }
+    std::queue<std::pair<::com::rdk::hal::hdmioutput::State, ::com::rdk::hal::hdmioutput::State>> emptyQueue;
+    std::swap(mStateChangeQueue, emptyQueue);
 }
 
 bool HDMIOutputEventListener::hasStateChanged() const {
@@ -102,26 +101,67 @@ bool HDMIOutputEventListener::hasStateChanged() const {
 
 // HDMIOutputControllerListener implementations
 ::android::binder::Status HDMIOutputControllerListener::onHotPlugDetectStateChanged(bool state) {
+    // Check if we should update the queue based on current state
+    bool shouldUpdateQueue = true;
+    if (mHDMIOutput != nullptr) {
+        hdmioutput::State currentState;
+        ::android::binder::Status status = mHDMIOutput->getState(&currentState);
+        if (status.isOk()) {
+            // Only update queue if in OPENING or STARTED states
+            shouldUpdateQueue = (currentState == hdmioutput::State::OPENING ||
+                                currentState == hdmioutput::State::STARTED);
+            
+            if (!shouldUpdateQueue) {
+                UT_LOG_INFO("HDMIOutputControllerListener::onHotPlugDetectStateChanged called with state[%s] but current device state is [%d] - not updating queue",
+                           state ? "true" : "false", static_cast<int>(currentState));
+            }
+        }
+    }
+    
     {
         std::lock_guard<std::mutex> lock(mHPDStateMutex);
-        mHPDStateQueue.push(state);
-        // Update legacy single-value storage
+        if (shouldUpdateQueue) {
+            mHPDStateQueue.push(state);
+            mHPDStateCV.notify_all();
+        }
+        // Always update legacy single-value storage
         m_hpdState = state;
         m_hpdStateChanged = true;
     }
-    UT_LOG_INFO("HDMIOutputControllerListener::onHotPlugDetectStateChanged called with state[%s]",
-                state ? "true" : "false");
+    
+    if (shouldUpdateQueue) {
+        UT_LOG_INFO("HDMIOutputControllerListener::onHotPlugDetectStateChanged called with state[%s] - queue updated",
+                    state ? "true" : "false");
+    }
     return ::android::binder::Status::ok();
 }
 
-bool HDMIOutputControllerListener::getNextHPDStateChange(bool& state) {
-    std::lock_guard<std::mutex> lock(mHPDStateMutex);
-    if (mHPDStateQueue.empty()) {
+bool HDMIOutputControllerListener::getNextHPDStateChange(bool& state, chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mHPDStateMutex);
+    if (timeout.count() > 0) {
+        if (!mHPDStateCV.wait_for(lock, timeout, [this]{ return !mHPDStateQueue.empty(); })) {
+            return false; // Timed out
+        }
+    } else if (mHPDStateQueue.empty()) {
         return false;
     }
     state = mHPDStateQueue.front();
     mHPDStateQueue.pop();
     return true;
+}
+
+bool HDMIOutputControllerListener::waitForHPDCount(int32_t count, chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mHPDStateMutex);
+    if (!mHPDStateCV.wait_for(lock, timeout, [this, count]{ return static_cast<int32_t>(mHPDStateQueue.size()) >= count; })) {
+        return false; // Timed out
+    }
+    return true;
+}
+
+void HDMIOutputControllerListener::clearHPDQueue() {
+    std::lock_guard<std::mutex> lock(mHPDStateMutex);
+    std::queue<bool> emptyQueue;
+    std::swap(mHPDStateQueue, emptyQueue);
 }
 
 ::android::binder::Status HDMIOutputControllerListener::onFrameRateChanged() {
@@ -131,17 +171,36 @@ bool HDMIOutputControllerListener::getNextHPDStateChange(bool& state) {
         // Update legacy single-value storage
         m_frameRateChanged = true;
     }
+    mFrameRateCV.notify_all();
     UT_LOG_INFO("HDMIOutputControllerListener::onFrameRateChanged called");
     return ::android::binder::Status::ok();
 }
 
-bool HDMIOutputControllerListener::getNextFrameRateChange() {
-    std::lock_guard<std::mutex> lock(mFrameRateMutex);
-    if (mFrameRateQueue.empty()) {
+bool HDMIOutputControllerListener::getNextFrameRateChange(chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mFrameRateMutex);
+    if (timeout.count() > 0) {
+        if (!mFrameRateCV.wait_for(lock, timeout, [this]{ return !mFrameRateQueue.empty(); })) {
+            return false; // Timed out
+        }
+    } else if (mFrameRateQueue.empty()) {
         return false;
     }
     mFrameRateQueue.pop();
     return true;
+}
+
+bool HDMIOutputControllerListener::waitForFrameRateCount(int32_t count, chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mFrameRateMutex);
+    if (!mFrameRateCV.wait_for(lock, timeout, [this, count]{ return static_cast<int32_t>(mFrameRateQueue.size()) >= count; })) {
+        return false; // Timed out
+    }
+    return true;
+}
+
+void HDMIOutputControllerListener::clearFrameRateQueue() {
+    std::lock_guard<std::mutex> lock(mFrameRateMutex);
+    std::queue<bool> emptyQueue;
+    std::swap(mFrameRateQueue, emptyQueue);
 }
 
 ::android::binder::Status HDMIOutputControllerListener::onHDCPStatusChanged(
@@ -155,19 +214,38 @@ bool HDMIOutputControllerListener::getNextFrameRateChange() {
         m_hdcpProtocolVersion = hdcpProtocolVersion;
         m_hdcpStatusChanged = true;
     }
+    mHDCPStatusCV.notify_all();
     UT_LOG_INFO("HDMIOutputControllerListener::onHDCPStatusChanged called with status[%d], version[%d]",
                 static_cast<int>(hdcpStatus), static_cast<int>(hdcpProtocolVersion));
     return ::android::binder::Status::ok();
 }
 
-bool HDMIOutputControllerListener::getNextHDCPStatusChange(std::pair<::com::rdk::hal::hdmioutput::HDCPStatus, ::com::rdk::hal::hdmioutput::HDCPProtocolVersion>& hdcpInfo) {
-    std::lock_guard<std::mutex> lock(mHDCPStatusMutex);
-    if (mHDCPStatusQueue.empty()) {
+bool HDMIOutputControllerListener::getNextHDCPStatusChange(std::pair<::com::rdk::hal::hdmioutput::HDCPStatus, ::com::rdk::hal::hdmioutput::HDCPProtocolVersion>& hdcpInfo, chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mHDCPStatusMutex);
+    if (timeout.count() > 0) {
+        if (!mHDCPStatusCV.wait_for(lock, timeout, [this]{ return !mHDCPStatusQueue.empty(); })) {
+            return false; // Timed out
+        }
+    } else if (mHDCPStatusQueue.empty()) {
         return false;
     }
     hdcpInfo = mHDCPStatusQueue.front();
     mHDCPStatusQueue.pop();
     return true;
+}
+
+bool HDMIOutputControllerListener::waitForHDCPStatusCount(int32_t count, chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mHDCPStatusMutex);
+    if (!mHDCPStatusCV.wait_for(lock, timeout, [this, count]{ return static_cast<int32_t>(mHDCPStatusQueue.size()) >= count; })) {
+        return false; // Timed out
+    }
+    return true;
+}
+
+void HDMIOutputControllerListener::clearHDCPStatusQueue() {
+    std::lock_guard<std::mutex> lock(mHDCPStatusMutex);
+    std::queue<std::pair<::com::rdk::hal::hdmioutput::HDCPStatus, ::com::rdk::hal::hdmioutput::HDCPProtocolVersion>> emptyQueue;
+    std::swap(mHDCPStatusQueue, emptyQueue);
 }
 
 ::android::binder::Status HDMIOutputControllerListener::onEDID(const ::std::vector<uint8_t>& edid) {
@@ -178,13 +256,18 @@ bool HDMIOutputControllerListener::getNextHDCPStatusChange(std::pair<::com::rdk:
         m_edid = edid;
         m_edidReceived = true;
     }
+    mEDIDCV.notify_all();
     UT_LOG_INFO("HDMIOutputControllerListener::onEDID called, received %zu bytes", edid.size());
     return ::android::binder::Status::ok();
 }
 
-bool HDMIOutputControllerListener::getNextEDID(::std::vector<uint8_t>& edid) {
-    std::lock_guard<std::mutex> lock(mEDIDMutex);
-    if (mEDIDQueue.empty()) {
+bool HDMIOutputControllerListener::getNextEDID(::std::vector<uint8_t>& edid, chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mEDIDMutex);
+    if (timeout.count() > 0) {
+        if (!mEDIDCV.wait_for(lock, timeout, [this]{ return !mEDIDQueue.empty(); })) {
+            return false; // Timed out
+        }
+    } else if (mEDIDQueue.empty()) {
         return false;
     }
     edid = mEDIDQueue.front();
@@ -192,34 +275,57 @@ bool HDMIOutputControllerListener::getNextEDID(::std::vector<uint8_t>& edid) {
     return true;
 }
 
+bool HDMIOutputControllerListener::waitForEDIDCount(int32_t count, chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mEDIDMutex);
+    if (!mEDIDCV.wait_for(lock, timeout, [this, count]{ return static_cast<int32_t>(mEDIDQueue.size()) >= count; })) {
+        return false; // Timed out
+    }
+    return true;
+}
+
+void HDMIOutputControllerListener::clearEDIDQueue() {
+    std::lock_guard<std::mutex> lock(mEDIDMutex);
+    std::queue<::std::vector<uint8_t>> emptyQueue;
+    std::swap(mEDIDQueue, emptyQueue);
+}
+
+bool HDMIOutputControllerListener::getNextVICChange(int32_t& vic, chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mVICChangeMutex);
+    if (timeout.count() > 0) {
+        if (!mVICChangeCV.wait_for(lock, timeout, [this]{ return !mVICChangeQueue.empty(); })) {
+            return false; // Timed out
+        }
+    } else if (mVICChangeQueue.empty()) {
+        return false;
+    }
+    vic = mVICChangeQueue.front();
+    mVICChangeQueue.pop();
+    return true;
+}
+
 void HDMIOutputControllerListener::reset() {
+    // Clear all queues
+    clearHPDQueue();
+    clearFrameRateQueue();
+    clearHDCPStatusQueue();
+    clearEDIDQueue();
+    
+    // Reset legacy single-value storage
     {
         std::lock_guard<std::mutex> lock(mHPDStateMutex);
-        while (!mHPDStateQueue.empty()) {
-            mHPDStateQueue.pop();
-        }
         m_hpdStateChanged = false;
         m_hpdState = false;
     }
     {
         std::lock_guard<std::mutex> lock(mFrameRateMutex);
-        while (!mFrameRateQueue.empty()) {
-            mFrameRateQueue.pop();
-        }
         m_frameRateChanged = false;
     }
     {
         std::lock_guard<std::mutex> lock(mHDCPStatusMutex);
-        while (!mHDCPStatusQueue.empty()) {
-            mHDCPStatusQueue.pop();
-        }
         m_hdcpStatusChanged = false;
     }
     {
         std::lock_guard<std::mutex> lock(mEDIDMutex);
-        while (!mEDIDQueue.empty()) {
-            mEDIDQueue.pop();
-        }
         m_edidReceived = false;
         m_edid.clear();
     }

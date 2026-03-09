@@ -106,6 +106,8 @@ using namespace com::rdk::hal::hdmioutput;
 
 extern const ut_control_keyStringMapping_t bool_mapTable_hdmioutput[];
 extern const ut_control_keyStringMapping_t statusHdmiOutputException_mapTable[];
+extern const ut_control_keyStringMapping_t hdcpProtocolVersion_mapTable[];
+extern const ut_control_keyStringMapping_t hdcpStatus_mapTable[];
 
 std::string vecIntToString(std::vector<int32_t>& addrs);
 std::string vecByteToHexString(const std::vector<uint8_t>& data);
@@ -129,7 +131,11 @@ int32_t getProfileSupportedScanInfo(int resourceIndex, int scanIndex);
 int getProfileSupportedVICCount(int resourceIndex);
 int getProfileSupportedContentTypeCount(int resourceIndex);
 int getProfileSupportedHDRModeCount(int resourceIndex);
+int getProfileSupportedHDCPProtocolVersionCount(int resourceIndex);
 std::string getProfileSupportedSPDSource(int resourceIndex, int sourceIndex);
+std::string getProfileSupportedHDCPProtocolVersion(int resourceIndex, int versionIndex);
+HDCPProtocolVersion getProfileMaxSupportedHDCPProtocolVersion(int resourceIndex);
+hdmioutput::Property convertStringToProperty(const std::string& propertyStr);
 
 #endif //__VTS_HDMIOUTPUT_HELPER_H__
 
