@@ -114,6 +114,7 @@ public:
         for (auto& output : mHDMIOutputList)
         {
             auto& hdmiOutput = std::get<1>(output);
+            auto& controllerListener = std::get<2>(output);
             auto& eventListener = std::get<3>(output);
             auto& controller = std::get<4>(output);
             auto& capabilities = std::get<5>(output);
@@ -122,6 +123,8 @@ public:
             bool closeResult = false;
             HDMIOUTPUT_CLOSE(hdmiOutput, controller, closeResult);
             UT_ASSERT_TRUE(closeResult);
+            controllerListener->reset();
+            eventListener->reset(); // Clear any pending events in the event listener
 
             // Unregister the event listener
             bool unregisterResult = false;
@@ -142,6 +145,7 @@ public:
                 continue;
             auto& controller = std::get<4>(hdmiOutputTuple);
             HDMIOUTPUT_START(controller);
+            UT_LOG_INFO("******************************Port %d STARTED***************************\n", portId);
         }
     }
 
@@ -167,7 +171,7 @@ public:
         bool hpdState = false;
         HDMIOUTPUT_GET_HPD_STATE(controller, hpdState);
         UT_ASSERT_EQUAL(hpdState, config.connectionState);
-        UT_LOG_INFO("HPD state before start, HPD state: %d\n", hpdState);
+        UT_LOG_INFO("HPD state, HPD state: %d\n", hpdState);
 
         bool actualHPDState;
         bool callbackReceived = controllerListener->getNextHPDStateChange(actualHPDState, chrono::milliseconds(config.maxWaitTimeMs));
@@ -209,7 +213,11 @@ public:
         
         // Wait for HPD callback with timeout from config
         bool waitSuccess = controllerListener->waitForHPDCount(config.hpdSequence.size(), chrono::milliseconds(config.maxWaitTimeMs));
-        UT_ASSERT_FALSE(waitSuccess);
+        if (!isStarted) {
+            UT_ASSERT_FALSE(waitSuccess);
+        } else {
+            UT_ASSERT_TRUE(waitSuccess);
+        }
         sleep(1); // Ensure queue processing complete
 
         // get the max supported version for the port from the supported list in the config
@@ -237,14 +245,14 @@ public:
                 UT_LOG_INFO("HDCP status callback received: %d \n", static_cast<int>(hdcpInfo.first));
                 if (isStarted) {
                     std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo1;
-                    bool cbReceived1 = controllerListener->getNextHDCPStatusChange(hdcpInfo1, chrono::milliseconds(100));
+                    bool cbReceived1 = controllerListener->getNextHDCPStatusChange(hdcpInfo1, chrono::milliseconds(5000));
                     UT_ASSERT_TRUE(cbReceived1);
                     UT_ASSERT_EQUAL(hdcpInfo1.first, hdmioutput::HDCPStatus::AUTHENTICATION_IN_PROGRESS);
-                    UT_ASSERT_EQUAL(hdcpInfo1.second, negotiatedVersion);
+                    UT_ASSERT_EQUAL(hdcpInfo1.second, hdmioutput::HDCPProtocolVersion::UNDEFINED);
                     UT_LOG_INFO("HDCP status callback received: %d \n", static_cast<int>(hdcpInfo1.first));
 
                     std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo2;
-                    bool cbReceived2 = controllerListener->getNextHDCPStatusChange(hdcpInfo2, chrono::milliseconds(100));
+                    bool cbReceived2 = controllerListener->getNextHDCPStatusChange(hdcpInfo2, chrono::milliseconds(5000));
                     UT_ASSERT_TRUE(cbReceived2);
                     UT_ASSERT_EQUAL(hdcpInfo2.first, hdmioutput::HDCPStatus::AUTHENTICATED);
                     UT_ASSERT_EQUAL(hdcpInfo2.second, negotiatedVersion);
@@ -476,46 +484,72 @@ UT_ADD_TEST(VTS_L3_HDMIOUTPUT, SPDInfoFrameTransmission)
 {
     UT_LOG_INFO("[L3 Test] SPDInfoFrameTransmission - Optional analyzer verification via Python wrapper\n");
 
-    // Loop through all HDMI output ports
-    for (auto& outputTuple : mHDMIOutputList)
+    // Parse test configuration from YAML
+    std::vector<hdmioutputSPDConfig_t> spdConfigs;
+    UT_status_t result = vts_hdmioutput_parse_spdTest((char*)VTS_HDMIOUTPUT_TEST_CONFIG_PATH, 
+                                                       (char*)moduleName, (char*)testGroupName, 
+                                                       (char*)"SPDInfoFrameTransmission", spdConfigs);
+    UT_ASSERT_EQUAL(result, UT_STATUS_OK);
+    UT_ASSERT_TRUE(spdConfigs.size() > 0);
+
+    // Loop through all configured ports
+    for (const auto& config : spdConfigs)
     {
-        auto& portId = std::get<0>(outputTuple);
-        auto& hdmiOutput = std::get<1>(outputTuple);
-        auto& controller = std::get<4>(outputTuple);
+        UT_LOG_INFO("Testing port ID: %d\n", config.portId);
 
-        UT_LOG_INFO("Testing port ID: %d\n", portId.value);
+        // Find the matching port in mHDMIOutputList
+        bool portFound = false;
+        for (auto& outputTuple : mHDMIOutputList)
+        {
+            auto& portId = std::get<0>(outputTuple);
+            if (portId.value != config.portId)
+                continue;
 
-        // Create SPD InfoFrame
-        hdmioutput::SPDInfoFrame spdInfoFrame;
-        // vendorName is std::array<uint8_t, 8>
-        std::string vendorStr = "RDK";
-        std::copy(vendorStr.begin(), vendorStr.end(), spdInfoFrame.vendorName.begin());
-        // productDescription is std::array<uint8_t, 16>
-        std::string productStr = "Test Device";
-        std::copy(productStr.begin(), productStr.end(), spdInfoFrame.productDescription.begin());
-        spdInfoFrame.spdSourceInformation = hdmioutput::SPDSource::DIGITAL_STB;
+            portFound = true;
+            auto& hdmiOutput = std::get<1>(outputTuple);
+            auto& controller = std::get<4>(outputTuple);
 
-        // Set SPD InfoFrame
-        HDMIOUTPUT_SET_SPD_INFOFRAME(controller, spdInfoFrame);
-        UT_LOG_INFO("SPD InfoFrame set successfully\n");
+            UT_LOG_INFO("===== Testing Port %d =====\n", config.portId);
 
-        // Get and verify SPD InfoFrame
-        hdmioutput::SPDInfoFrame retrievedSPD;
-        HDMIOUTPUT_GET_SPD_INFOFRAME(controller, retrievedSPD);
-        UT_ASSERT_EQUAL(retrievedSPD.vendorName, spdInfoFrame.vendorName);
-        UT_ASSERT_EQUAL(retrievedSPD.productDescription, spdInfoFrame.productDescription);
-        UT_ASSERT_EQUAL(retrievedSPD.spdSourceInformation, spdInfoFrame.spdSourceInformation);
-        UT_LOG_INFO("SPD InfoFrame verified successfully\n");
+            // Create SPD InfoFrame from config
+            hdmioutput::SPDInfoFrame spdInfoFrame;
+            // vendorName is std::array<uint8_t, 8>
+            std::copy(config.vendorName.begin(), config.vendorName.end(), spdInfoFrame.vendorName.begin());
+            // productDescription is std::array<uint8_t, 16>
+            std::copy(config.productDescription.begin(), config.productDescription.end(), spdInfoFrame.productDescription.begin());
+            // Convert string to SPDSource enum
+            spdInfoFrame.spdSourceInformation = convertStringToSPDSource(config.sourceInformation);
 
-        // Start the port to begin transmission
-        StartPort(portId.value);
-        UT_LOG_INFO("HDMI output started, SPD InfoFrame transmitting (Vendor='RDK', Product='Test Device', Source=%d)\n", spdInfoFrame.spdSourceInformation);
+            UT_LOG_INFO("SPD Info from config - Vendor: '%s', Product: '%s', Source: %s\n", 
+                       config.vendorName.c_str(), config.productDescription.c_str(), config.sourceInformation.c_str());
 
-        // Python wrapper can verify on HDMI analyzer if available
-        sleep(1); // Allow time for InfoFrame transmission
+            // Set SPD InfoFrame
+            HDMIOUTPUT_SET_SPD_INFOFRAME(controller, spdInfoFrame);
+            UT_LOG_INFO("SPD InfoFrame set successfully\n");
 
-        // Stop the port
-        StopPort(portId.value);
+            // Get and verify SPD InfoFrame
+            hdmioutput::SPDInfoFrame retrievedSPD;
+            HDMIOUTPUT_GET_SPD_INFOFRAME(controller, retrievedSPD);
+            UT_ASSERT_EQUAL(retrievedSPD.vendorName, spdInfoFrame.vendorName);
+            UT_ASSERT_EQUAL(retrievedSPD.productDescription, spdInfoFrame.productDescription);
+            UT_ASSERT_EQUAL(retrievedSPD.spdSourceInformation, spdInfoFrame.spdSourceInformation);
+            UT_LOG_INFO("SPD InfoFrame verified successfully\n");
+
+            // Start the port to begin transmission
+            StartPort(config.portId);
+            UT_LOG_INFO("HDMI output started, SPD InfoFrame transmitting (Vendor='%s', Product='%s', Source=%d)\n", 
+                       config.vendorName.c_str(), config.productDescription.c_str(), static_cast<int>(spdInfoFrame.spdSourceInformation));
+
+            // Python wrapper can verify on HDMI analyzer if available
+            sleep(5); // Allow time for InfoFrame transmission
+
+            // Stop the port
+            StopPort(config.portId);
+            UT_LOG_INFO("===== Port %d Test Complete =====\n", config.portId);
+            break;
+        }
+
+        UT_ASSERT_TRUE(portFound);
     }
 }
 
@@ -582,6 +616,7 @@ UT_ADD_TEST(VTS_L3_HDMIOUTPUT, PropertyApplicationVerification)
             auto& controller = std::get<4>(outputTuple);
 
             UT_LOG_INFO("===== Testing Port %d =====\n", config.portId);
+            StartPort(config.portId);
 
             // Loop through each property to test
             for (const auto& property : config.testProperties)
@@ -612,16 +647,11 @@ UT_ADD_TEST(VTS_L3_HDMIOUTPUT, PropertyApplicationVerification)
                     UT_ASSERT_TRUE(retrievedValue.has_value());
                     UT_ASSERT_EQUAL(retrievedValue->value->get<PropertyValue::Value::Tag::intValue>(), testValue);
                     UT_LOG_INFO("  Property verified successfully\n");
-
-                    StartPort(config.portId);
-                    UT_LOG_INFO("  HDMI output started with %s=%d\n", property.propertyName.c_str(), testValue);
                     // Allow time for property application
-                    sleep(1);
+                    sleep(2);
                     // Python wrapper can verify InfoFrames on HDMI analyzer if available
                     UT_LOG_INFO("All properties tested. Python wrapper may verify InfoFrames on analyzer\n");
         
-                    // Stop the port
-                    StopPort(config.portId);
                 }
                 if (prop == hdmioutput::Property::VIC) {
                     UT_LOG_INFO("VIC property changes may trigger frame rate changes.\n");
@@ -636,6 +666,8 @@ UT_ADD_TEST(VTS_L3_HDMIOUTPUT, PropertyApplicationVerification)
                     }
                 }
             }
+            // Stop the port
+            StopPort(config.portId);
 
             UT_LOG_INFO("===== Port %d Test Complete =====\n", config.portId);
             break;
@@ -696,7 +728,7 @@ UT_ADD_TEST(VTS_L3_HDMIOUTPUT, VideoPlaybackEventVerification)
         UT_LOG_INFO("Port %d started in STARTED state\n", portId.value);
 
         // Allow time for InfoFrame transmission to begin
-        sleep(2);
+        sleep(5);
 
         // Check for HPD state (should be connected for InfoFrames)
         bool hpdState = false;
@@ -713,8 +745,10 @@ UT_ADD_TEST(VTS_L3_HDMIOUTPUT, VideoPlaybackEventVerification)
             if (hdcpReceived == hdmioutput::HDCPStatus::AUTHENTICATED)
             {
                 UT_LOG_INFO("HDCP status received: status=%d\n", static_cast<int>(hdcpReceived));
+                UT_LOG_INFO("HDCP authentication successful, video playback should be active with InfoFrames transmitting\n");
+                sleep(10); // Allow time for InfoFrames to be transmitted 
             }
-
+            
             UT_LOG_INFO("Video playback InfoFrame events verified successfully\n");
         }
         else

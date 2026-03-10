@@ -319,7 +319,7 @@ int getProfileSupportedHDRModeCount(int resourceIndex) {
 }
 
 int getProfileSupportedHDCPProtocolVersionCount(int resourceIndex) {
-    std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedHDCPProtocolVersions";
+    std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedHDCPVersions";
     return UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
 }
 
@@ -399,7 +399,7 @@ std::string getProfileSupportedSPDSource(int resourceIndex, int sourceIndex) {
 
 std::string getProfileSupportedHDCPProtocolVersion(int resourceIndex, int versionIndex) {
     char versionString[UT_KVP_MAX_ELEMENT_SIZE];
-    std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedHDCPProtocolVersions." + std::to_string(versionIndex);
+    std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedHDCPVersions." + std::to_string(versionIndex);
     UT_KVP_PROFILE_GET_STRING(key.c_str(), versionString);
     return std::string(versionString);
 }

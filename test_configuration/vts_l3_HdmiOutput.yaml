@@ -27,8 +27,8 @@ hdmioutput:
     HotPlugDetectStateBeforeStartCallback:
       ports:
         - id: 0  # IHDMIOutput.Id
-          connection_state: false
-          hpd_sequence: [true, false]  # Sequence of HPD states to verify
+          connection_state: true
+          hpd_sequence: [false, true]  # Sequence of HPD states to verify
           expected_hdcp_version: VERSION_2_X  # Expected HDCP version after HPD event: UNDEFINED, VERSION_1_X, VERSION_2_X
           expect_edid_after_hpd: true  # Expect EDID callback after HPD TRUE
           expected_edid_min_size: 128  # Minimum expected EDID size in bytes
@@ -55,8 +55,8 @@ hdmioutput:
     HotPlugDetectStateAfterStartCallback:
       ports:
         - id: 0  # IHDMIOutput.Id
-          connection_state: false
-          hpd_sequence: [true, false]  # Sequence of HPD states to verify after START
+          connection_state: true
+          hpd_sequence: [false, true]  # Sequence of HPD states to verify after START
           expected_hdcp_version: VERSION_2_X  # Expected HDCP version after HPD event: UNDEFINED, VERSION_1_X, VERSION_2_X
           expect_edid_after_hpd: true  # Expect EDID callback after HPD TRUE
           expected_edid_min_size: 128  # Minimum expected EDID size in bytes
@@ -76,7 +76,7 @@ hdmioutput:
             0x1D,0x74,0x00,0x00,0x1E,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xC1]
-            max_wait_time_ms: 30000
+          max_wait_time_ms: 30000
 
     EDIDCallback:
       ports:
@@ -109,6 +109,7 @@ hdmioutput:
             vendor_name: "RDK"
             product_description: "Test Device"
             source_information: DIGITAL_STB  # Possible: DIGITAL_STB, DVD_PLAYER, etc.
+          max_wait_time_ms: 5000
 
     # Property Application Verification Test
     # User action: Optional - verify AVI InfoFrame on HDMI analyzer
