@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     // Initialize HDMI output service
     result = VTS_HDMIOUTPUT_init();
     if (result != UT_STATUS_OK) {
-        UT_LOG_ERROR("Failed to initialize HDMI output service");
+        UT_LOG_ERROR("Failed to initialize HDMI output service\n");
         return result;
     }
 

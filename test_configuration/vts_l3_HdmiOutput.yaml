@@ -28,7 +28,7 @@ hdmioutput:
       ports:
         - id: 0  # IHDMIOutput.Id
           connection_state: true
-          hpd_sequence: [false, true]  # Sequence of HPD states to verify
+          hpd_sequence: [false, true, false, true]  # Sequence of HPD states to verify
           expected_hdcp_version: VERSION_2_X  # Expected HDCP version after HPD event: UNDEFINED, VERSION_1_X, VERSION_2_X
           expect_edid_after_hpd: true  # Expect EDID callback after HPD TRUE
           expected_edid_min_size: 128  # Minimum expected EDID size in bytes
@@ -56,7 +56,7 @@ hdmioutput:
       ports:
         - id: 0  # IHDMIOutput.Id
           connection_state: true
-          hpd_sequence: [false, true]  # Sequence of HPD states to verify after START
+          hpd_sequence: [false, true, false, true]  # Sequence of HPD states to verify after START
           expected_hdcp_version: VERSION_2_X  # Expected HDCP version after HPD event: UNDEFINED, VERSION_1_X, VERSION_2_X
           expect_edid_after_hpd: true  # Expect EDID callback after HPD TRUE
           expected_edid_min_size: 128  # Minimum expected EDID size in bytes

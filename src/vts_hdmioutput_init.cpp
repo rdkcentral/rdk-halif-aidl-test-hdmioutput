@@ -90,7 +90,7 @@ static UT_status_t vts_hdmioutput_getService()
             defaultServiceManager()->getService(String16(IHDMIOutputManager::serviceName().c_str())));
     if (gHDMIOUTPUTHandle == nullptr)
     {
-        UT_LOG_ERROR("HDMIOUTPUT Service not available");
+        UT_LOG_ERROR("HDMIOUTPUT Service not available\n");
         return UT_STATUS_FAILURE;
     }
     return UT_STATUS_OK;
@@ -100,7 +100,7 @@ UT_status_t VTS_HDMIOUTPUT_init()
 {
     if(vts_hdmioutput_getService() != UT_STATUS_OK)
     {
-        UT_LOG_ERROR("Failed to get HDMIOUTPUT Service");
+        UT_LOG_ERROR("Failed to get HDMIOUTPUT Service\n");
         return UT_STATUS_FAILURE;
     }
 
@@ -109,7 +109,7 @@ UT_status_t VTS_HDMIOUTPUT_init()
 
 void VTS_HDMIOUTPUT_destroy()
 {
-    UT_LOG_INFO("Destroying VTS_HDMIOUTPUT...");
+    UT_LOG_INFO("Destroying VTS_HDMIOUTPUT...\n");
 }
 
 /** @} */ // End of HDMIOUTPUT_HALTEST_INIT

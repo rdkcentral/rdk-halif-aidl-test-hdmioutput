@@ -72,7 +72,7 @@
         std::lock_guard<std::mutex> lock(mStateChangeMutex);
         mStateChangeQueue.emplace(oldState, newState);
     }
-    UT_LOG_INFO("HDMIOutputEventListener::onStateChanged called with oldState[%d], newState[%d]",
+    UT_LOG_INFO("HDMIOutputEventListener::onStateChanged called with oldState[%d], newState[%d]\n",
                 static_cast<int>(oldState), static_cast<int>(newState));
     return ::android::binder::Status::ok();
 }
@@ -112,7 +112,7 @@ bool HDMIOutputEventListener::hasStateChanged() const {
                                 currentState == hdmioutput::State::STARTED);
             
             if (!shouldUpdateQueue) {
-                UT_LOG_INFO("HDMIOutputControllerListener::onHotPlugDetectStateChanged called with state[%s] but current device state is [%d] - not updating queue",
+                UT_LOG_INFO("HDMIOutputControllerListener::onHotPlugDetectStateChanged called with state[%s] but current device state is [%d] - not updating queue\n",
                            state ? "true" : "false", static_cast<int>(currentState));
             }
         }
@@ -130,7 +130,7 @@ bool HDMIOutputEventListener::hasStateChanged() const {
     }
     
     if (shouldUpdateQueue) {
-        UT_LOG_INFO("HDMIOutputControllerListener::onHotPlugDetectStateChanged called with state[%s] - queue updated",
+        UT_LOG_INFO("HDMIOutputControllerListener::onHotPlugDetectStateChanged called with state[%s] - queue updated\n",
                     state ? "true" : "false");
     }
     return ::android::binder::Status::ok();
@@ -172,7 +172,7 @@ void HDMIOutputControllerListener::clearHPDQueue() {
         m_frameRateChanged = true;
     }
     mFrameRateCV.notify_all();
-    UT_LOG_INFO("HDMIOutputControllerListener::onFrameRateChanged called");
+    UT_LOG_INFO("HDMIOutputControllerListener::onFrameRateChanged called\n");
     return ::android::binder::Status::ok();
 }
 
@@ -215,7 +215,7 @@ void HDMIOutputControllerListener::clearFrameRateQueue() {
         m_hdcpStatusChanged = true;
     }
     mHDCPStatusCV.notify_all();
-    UT_LOG_INFO("HDMIOutputControllerListener::onHDCPStatusChanged called with status[%d], version[%d]",
+    UT_LOG_INFO("HDMIOutputControllerListener::onHDCPStatusChanged called with status[%d], version[%d]\n",
                 static_cast<int>(hdcpStatus), static_cast<int>(hdcpProtocolVersion));
     return ::android::binder::Status::ok();
 }
@@ -257,7 +257,7 @@ void HDMIOutputControllerListener::clearHDCPStatusQueue() {
         m_edidReceived = true;
     }
     mEDIDCV.notify_all();
-    UT_LOG_INFO("HDMIOutputControllerListener::onEDID called, received %zu bytes", edid.size());
+    UT_LOG_INFO("HDMIOutputControllerListener::onEDID called, received %zu bytes\n", edid.size());
     return ::android::binder::Status::ok();
 }
 

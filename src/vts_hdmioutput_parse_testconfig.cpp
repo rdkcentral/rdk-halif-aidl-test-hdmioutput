@@ -39,7 +39,7 @@ static void* hdmioutputkvp_create_instance(char *fileName)
 
     if(!instance)
     {
-        UT_LOG_ERROR("[HDMIOUTPUT]Failed to create ut kvp instance");
+        UT_LOG_ERROR("[HDMIOUTPUT]Failed to create ut kvp instance\n");
         return nullptr;
     }
 
@@ -47,7 +47,7 @@ static void* hdmioutputkvp_create_instance(char *fileName)
 
     if(result != UT_KVP_STATUS_SUCCESS)
     {
-        UT_LOG_ERROR("[HDMIOUTPUT]Failed to open test configuration file");
+        UT_LOG_ERROR("[HDMIOUTPUT]Failed to open test configuration file\n");
         ut_kvp_destroyInstance(instance);
         return nullptr;
     }

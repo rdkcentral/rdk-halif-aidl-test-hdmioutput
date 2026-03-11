@@ -32,7 +32,7 @@ declare -r HALIF_VERSION=current
 RDK_HALIF_AIDL_VERSION="${RDK_HALIF_AIDL_VERSION="main"}"
 RDK_HALIF_TEST_BASE_URL="https://github.com/rdkcentral/rdk-halif-binder-test-"
 VCOMPONENT_HDMIOUTPUT_VERSION="${VCOMPONENT_HDMIOUTPUT_VERSION="main"}"
-OUT_TAR_FILE=vts-hdmioutput.tar.gz
+OUT_TAR_FILE=vts-HdmiOutput.tar.gz
 
 declare -A HALIF_COMPONENTS=(
   [hdmioutput]="current"
