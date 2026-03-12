@@ -56,6 +56,7 @@
  * @file vts_hdmioutput_l3_tests.cpp
  *
  */
+#include <unistd.h>
 #include "vts_hdmioutput.h"
 #include "vts_hdmioutput_parse_testconfig.h"
 

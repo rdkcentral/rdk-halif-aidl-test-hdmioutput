@@ -66,8 +66,5 @@ class virtualHdmiController(HdmiInterface):
         msg['hdmioutput']['params']['port'] = port
         msg['hdmioutput']['params']['connected'] = connected
         yaml_str = yaml.dump(msg)
-        print(yaml_str)
-        print(self.port)
-        print("\n")
         return self.utPlaneController.sendMessage(yaml_str)
 
