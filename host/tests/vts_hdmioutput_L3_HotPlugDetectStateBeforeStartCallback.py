@@ -151,7 +151,7 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateBeforeStartCallback(hdmiOutputHelperCl
             self.connectThreadObj.start()
 
             step_label = (
-                f"Test Suite: {HDMIOUTPUT_L3_TEST_SUITE_NAME} "
+                f"Test Suit: {HDMIOUTPUT_L3_TEST_SUITE_NAME} "
                 f"Test Case: {self.testcase} "
                 f"Port: {port_id}"
             )
