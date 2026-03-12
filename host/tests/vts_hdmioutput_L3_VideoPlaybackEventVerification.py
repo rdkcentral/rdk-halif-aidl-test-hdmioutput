@@ -43,17 +43,15 @@ HDMIOUTPUT_L3_TEST_SUITE_NAME = "VTS_L3_HDMIOUTPUT"
 class VTS_HDMIOUTPUT_L3_VideoPlaybackEventVerification(hdmiOutputHelperClass):
     """
     Python simulation wrapper for the L3 VideoPlaybackEventVerification test.
-
     Steps:
-      1. For each port listed in the YAML config:
-         a. Start a thread to simulate HDCP handshake sequence (UNAUTHENTICATED → IN_PROGRESS → AUTHENTICATED).
-         b. Assert hotplug CONNECTED so the DUT port can enter STARTED state.
-         c. Start the C++ test menu on the target device.
-         d. Select and run the VideoPlaybackEventVerification test case.
-         e. Wait for the HDCP simulation thread to finish.
-         f. Prompt the user to confirm InfoFrame events during video playback (manual verification).
-         g. Log the step result and stop the menu.
-      2. Aggregate results for all ports.
+        1. For each port in the HFP profile:
+             a. Start HDCP handshake simulation thread.
+             b. Assert hotplug CONNECTED.
+             c. Start menu and run test case.
+             d. Wait for thread to finish.
+             e. Prompt user for InfoFrame event verification.
+             f. Log step result and stop menu.
+        2. Aggregate results for all ports.
     """
     def __init__(self, log: logModule = None):
         self.testName = "HdmiOutput_L3_VideoPlaybackEventVerification"
@@ -88,10 +86,12 @@ class VTS_HDMIOUTPUT_L3_VideoPlaybackEventVerification(hdmiOutputHelperClass):
               4. Waits for thread to finish.
               5. Prompts user for InfoFrame event verification.
               6. Logs and aggregates results.
+        Note: Only execute for actual device/HAL
         Returns:
             bool: True if all ports pass, False otherwise.
         """
         self.testcase = "VideoPlaybackEventVerification"
+        
         self.utilities.change_directory(self.hal_session, self.targetWorkspace)
         self.testUserResponse = utUserResponse()
 

@@ -43,19 +43,18 @@ HDMIOUTPUT_L3_TEST_SUITE_NAME = "VTS_L3_HDMIOUTPUT"
 class VTS_HDMIOUTPUT_L3_PropertyApplicationVerification(hdmiOutputHelperClass):
     """
     Python simulation wrapper for the L3 PropertyApplicationVerification test.
-
     Steps:
-      1. For each port in the HFP profile:
-         a. Assert hotplug CONNECTED so the DUT port can enter STARTED state.
-         b. Start the C++ test menu on the target device.
-         c. Select and run the PropertyApplicationVerification test case.
-         d. Prompt the user to confirm InfoFrame transmission and property application (manual verification).
-         e. Log the step result and stop the menu.
-      2. Aggregate results for all ports.
+        1. For each port in the HFP profile:
+             a. Assert hotplug CONNECTED so the DUT port can enter STARTED state.
+             b. Start the C++ test menu on the target device.
+             c. Select and run the PropertyApplicationVerification test case.
+             d. Prompt the user to confirm InfoFrame transmission and property application (manual verification).
+             e. Log the step result and stop the menu.
+        2. Aggregate results for all ports.
     """
     def __init__(self, log: logModule = None):
         self.testName = "HdmiOutput_L3_PropertyApplicationVerification"
-        qcId = "4"
+        qcId = "3"
         super().__init__(self.testName, qcId, log)
         self.hdmiController = HdmiController(
             self.log, self.dut.rawConfig.get("dut").get("hdmiController")
@@ -85,6 +84,7 @@ class VTS_HDMIOUTPUT_L3_PropertyApplicationVerification(hdmiOutputHelperClass):
 
         if connect_state:
             self.hdmiController.setHDCPStatus(portid, "UNAUTHENTICATED", "UNDEFINED")
+            time.sleep(1)
             self.hdmiController.setHDCPStatus(portid, "AUTHENTICATION_IN_PROGRESS", "UNDEFINED")
             self.hdmiController.setHDCPStatus(portid, "AUTHENTICATED", "VERSION_2_X")
             for value in vic_values:

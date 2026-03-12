@@ -242,8 +242,9 @@ public:
             UT_ASSERT_TRUE(cbReceived);
             if (inputHPDState) {
                 UT_ASSERT_EQUAL(hdcpInfo.first, hdmioutput::HDCPStatus::UNAUTHENTICATED);
+                UT_ASSERT_EQUAL(hdcpInfo.second, hdmioutput::HDCPProtocolVersion::UNDEFINED);
                 UT_LOG_INFO("HDCP status callback received: %d \n", static_cast<int>(hdcpInfo.first));
-                if (isStarted) {
+                if (isStarted && config.hdcpSupported) {
                     std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo1;
                     bool cbReceived1 = controllerListener->getNextHDCPStatusChange(hdcpInfo1, chrono::milliseconds(5000));
                     UT_ASSERT_TRUE(cbReceived1);

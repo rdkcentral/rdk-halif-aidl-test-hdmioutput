@@ -107,6 +107,10 @@ UT_status_t vts_hdmioutput_parse_hpdTest(char *configurationFile, const char *mo
         ut_kvp_getStringField(kvpTestInstance, subkey, subValue, sizeof(subValue));
         config.expectedHdcpVersions = (hdmioutput::HDCPProtocolVersion)UT_Control_GetMapValue(hdcpProtocolVersion_mapTable, subValue, (int32_t)hdmioutput::HDCPProtocolVersion::UNDEFINED);
 
+        // hdcp_supported
+        snprintf(subkey, sizeof(subkey), "%s.ports.%d.hdcp_supported", testList, i);
+        config.hdcpSupported = ut_kvp_getBoolField(kvpTestInstance, subkey);
+        
         // expect_edid_after_hpd
         snprintf(subkey, sizeof(subkey), "%s.ports.%d.expect_edid_after_hpd", testList, i);
         config.expectEdidAfterHpd = ut_kvp_getBoolField(kvpTestInstance, subkey);

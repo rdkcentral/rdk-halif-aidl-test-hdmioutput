@@ -52,6 +52,7 @@ typedef struct hdmioutputHPDConfig
     bool connectionState;
     std::vector<bool> hpdSequence;
     hdmioutput::HDCPProtocolVersion expectedHdcpVersions;
+    bool hdcpSupported;
     bool expectEdidAfterHpd;
     uint32_t expectedEdidMinSize;
     std::vector<uint8_t> expectedEdid;

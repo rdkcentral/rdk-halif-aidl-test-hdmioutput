@@ -42,19 +42,18 @@ HDMIOUTPUT_L3_TEST_SUITE_NAME = "VTS_L3_HDMIOUTPUT"
 class VTS_HDMIOUTPUT_L3_HotPlugDetectStateBeforeStartCallback(hdmiOutputHelperClass):
     """
     Python simulation wrapper for the L3 HotPlugDetectStateBeforeStartCallback test.
-
     Steps:
-      1. For each port in the HFP profile:
-         a. Assert hotplug CONNECTED so the DUT port can enter STARTED state.
-         b. Start the C++ test menu on the target device.
-         c. Select and run the HotPlugDetectStateBeforeStartCallback test case.
-         d. Prompt the user to confirm InfoFrame transmission and property application (manual verification).
-         e. Log the step result and stop the menu.
-      2. Aggregate results for all ports.
+        1. For each port in the HFP profile:
+             a. Assert hotplug CONNECTED so the DUT port can enter STARTED state.
+             b. Start the C++ test menu on the target device.
+             c. Select and run the HotPlugDetectStateBeforeStartCallback test case.
+             d. Prompt the user to confirm InfoFrame transmission and property application (manual verification).
+             e. Log the step result and stop the menu.
+        2. Aggregate results for all ports.
     """
     def __init__(self, log: logModule = None):
-        self.testName = "HdmiOutput_L3_HotPlugDetectStateBeforeStartCallbackt"
-        qcId = "4"
+        self.testName = "HdmiOutput_L3_HotPlugDetectStateBeforeStartCallback"
+        qcId = "1"
         super().__init__(self.testName, qcId, log)
         self.hdmiController = HdmiController(
             self.log, self.dut.rawConfig.get("dut").get("hdmiController")

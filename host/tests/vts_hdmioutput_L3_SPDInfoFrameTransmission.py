@@ -43,21 +43,14 @@ HDMIOUTPUT_L3_TEST_SUITE_NAME = "VTS_L3_HDMIOUTPUT"
 class VTS_HDMIOUTPUT_L3_SPDInfoFrameTransmission(hdmiOutputHelperClass):
     """
     Python simulation wrapper for the L3 SPDInfoFrameTransmission test.
-
-    The DUT acts as the HDMI source (output). This wrapper simulates the HDMI
-    sink side by driving the vcomponent through the HdmiController:
-      - Asserts hotplug CONNECTED directly in testFunction so the DUT port
-        can enter STARTED state and begin transmitting InfoFrames.
-      - Sends an initial HDCP status (UNAUTHENTICATED / UNDEFINED) via a
-        short-delay thread to simulate the early HDCP handshake the sink
-        would trigger after hot-plug.
-
-    The C++ test (VTS_L3_HDMIOUTPUT::SPDInfoFrameTransmission) then:
-      1. Sets the SPD InfoFrame (vendor, product description, source info) on
-         the DUT controller.
-      2. Reads it back and verifies the values match what was set.
-      3. Starts the port so InfoFrames are transmitted over the simulated link.
-
+    Steps:
+        1. For each port in the HFP profile:
+             a. Assert hotplug CONNECTED so the DUT port can enter STARTED state.
+             b. Start the C++ test menu on the target device.
+             c. Select and run the SPDInfoFrameTransmission test case.
+             d. Prompt the user to confirm InfoFrame transmission (manual verification).
+             e. Log the step result and stop the menu.
+        2. Aggregate results for all ports.
     A user-response prompt is presented at the end of each SPD source variant
     to allow optional manual verification on an HDMI analyser.
     """
@@ -70,7 +63,7 @@ class VTS_HDMIOUTPUT_L3_SPDInfoFrameTransmission(hdmiOutputHelperClass):
             log (logModule, optional): Logger instance. Defaults to None.
         """
         self.testName = "HdmiOutput_L3_SPDInfoFrameTransmission"
-        qcId = "3"
+        qcId = "4"
         super().__init__(self.testName, qcId, log)
 
         self.hdmiController = HdmiController(
