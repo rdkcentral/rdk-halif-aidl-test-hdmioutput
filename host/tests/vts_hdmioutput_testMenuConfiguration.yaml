@@ -1,0 +1,62 @@
+#** *****************************************************************************
+# * Copyright 2026 RDK Management
+# * Licensed under the Apache License, Version 2.0
+# * http://www.apache.org/licenses/LICENSE-2.0
+#* ******************************************************************************
+hdmioutput:
+    description: "hdmi output testing profile / menu system for UT"
+    test:
+        artifacts:
+          - "../../build/bin/vts-HdmiOutput.tar.gz"
+        execute: "./run.sh"
+        type: UT-C # C (UT-C Cunit) / C++ (UT-G (g++ ut-core gtest backend))
+        suites:
+            0:
+                name: "VTS_L1_HDMIOUTPUT"
+                tests:
+                    - "getHDMIOutputIds_pos"
+                    - "getHDMIOutput_pos"
+                    - "getHDMIOutput_neg"
+                    - "getPlatformCapabilities_pos"
+                    - "getCapabilities_pos"
+                    - "getState_initial"
+                    - "open_pos"
+                    - "open_neg"
+                    - "close_pos"
+                    - "close_neg"
+                    - "registerEventListener_pos"
+                    - "unregisterEventListener_pos"
+                    - "registerEventListener_neg"
+                    - "unregisterEventListener_neg"
+                    - "getProperty_pos"
+                    - "getProperty_neg"
+                    - "controller_start_pos"
+                    - "controller_stop_pos"
+                    - "controller_start_neg"
+                    - "controller_stop_neg"
+                    - "getHotPlugDetectState_pos"
+                    - "setProperty_pos"
+                    - "setProperty_neg"
+                    - "setPropertyMulti_pos"
+                    - "setPropertyMulti_neg"
+                    - "getHDCPCurrentVersion_pos"
+                    - "getHDCPReceiverVersion_pos"
+                    - "getHDCPStatus_pos"
+                    - "setSPDInfoFrame_pos"
+                    - "getSPDInfoFrame_pos"
+            1:
+                name: "VTS_L2_HDMIOUTPUT"
+                tests:
+                    - "StateTransitions"
+                    - "HPDStateTransition"
+                    - "SetGetIndividualProperty"
+                    - "SetGetMultiProperties"
+                    - "SPDInfoFrame"
+            2:
+                name: "VTS_L3_HDMIOUTPUT"
+                tests:
+                    - "HotPlugDetectStateBeforeStartCallback"
+                    - "HotPlugDetectStateAfterStartCallback"
+                    - "SPDInfoFrameTransmission"
+                    - "PropertyApplicationVerification"
+                    - "VideoPlaybackEventVerification"
