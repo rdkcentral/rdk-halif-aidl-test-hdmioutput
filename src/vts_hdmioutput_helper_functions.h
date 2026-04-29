@@ -109,11 +109,11 @@ extern const ut_control_keyStringMapping_t statusHdmiOutputException_mapTable[];
 extern const ut_control_keyStringMapping_t hdcpProtocolVersion_mapTable[];
 extern const ut_control_keyStringMapping_t hdcpStatus_mapTable[];
 
-std::string vecIntToString(std::vector<int32_t>& addrs);
-std::string vecByteToHexString(const std::vector<uint8_t>& data);
-HDROutputMode convertStringToHDROutputMode(const std::string &val); 
+std::string hdmioutputVecIntToString(std::vector<int32_t>& addrs);
+std::string hdmioutputVecByteToHexString(const std::vector<uint8_t>& data);
+HDROutputMode convertStringToHDROutputMode(const std::string &val);
 HDCPProtocolVersion convertStringToHDCPProtocolVersions(const std::string &val);
-Colorimetry convertStringToColorimetry(const std::string &val); 
+Colorimetry convertStringToColorimetry(const std::string &val);
 PixelFormat convertStringToPixelFormat(const std::string &val);
 SPDSource convertStringToSPDSource(const std::string &val);
 FreeSync convertStringToFreeSync(const std::string &val);

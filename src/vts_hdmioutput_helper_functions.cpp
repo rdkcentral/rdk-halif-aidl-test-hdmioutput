@@ -107,7 +107,7 @@ const ut_control_keyStringMapping_t hdcpStatus_mapTable[] =
     {NULL, -1}
 };
 
-std::string vecIntToString(std::vector<int32_t>& addrs)
+std::string hdmioutputVecIntToString(std::vector<int32_t>& addrs)
 {
     std::string s;
     for (size_t i = 0; i < addrs.size(); ++i)
@@ -118,7 +118,7 @@ std::string vecIntToString(std::vector<int32_t>& addrs)
     return s;
 }
 
-std::string vecByteToHexString(const std::vector<uint8_t>& data)
+std::string hdmioutputVecByteToHexString(const std::vector<uint8_t>& data)
 {
     std::ostringstream oss;
     oss << std::uppercase << std::hex;  // uppercase hex letters
@@ -327,7 +327,7 @@ int32_t getProfileSupportedVIC(int resourceIndex, int vicIndex) {
     char vicString[UT_KVP_MAX_ELEMENT_SIZE];
     std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedVICs." + std::to_string(vicIndex);
     UT_KVP_PROFILE_GET_STRING(key.c_str(), vicString);
-    
+
     // Parse VIC enum string like "VIC16_1920_1080_P_60_16_9" to extract number
     std::string vicStr(vicString);
     if (vicStr.find("VIC") == 0) {
@@ -343,7 +343,7 @@ int32_t getProfileSupportedContentType(int resourceIndex, int typeIndex) {
     char typeString[UT_KVP_MAX_ELEMENT_SIZE];
     std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedContentTypes." + std::to_string(typeIndex);
     UT_KVP_PROFILE_GET_STRING(key.c_str(), typeString);
-    
+
     // Map ContentType enum strings to numeric values
     std::string typeStr(typeString);
     if (typeStr == "UNSPECIFIED") return static_cast<int32_t>(ContentType::UNSPECIFIED);
@@ -365,7 +365,7 @@ int32_t getProfileSupportedAFD(int resourceIndex, int afdIndex) {
     char afdString[UT_KVP_MAX_ELEMENT_SIZE];
     std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedAFD." + std::to_string(afdIndex);
     UT_KVP_PROFILE_GET_STRING(key.c_str(), afdString);
-    
+
     // Map AFD enum strings to numeric values
     std::string afdStr(afdString);
     if (afdStr == "UNSPECIFIED") return static_cast<int32_t>(AFD::UNSPECIFIED);
@@ -380,7 +380,7 @@ int32_t getProfileSupportedScanInfo(int resourceIndex, int scanIndex) {
     char scanString[UT_KVP_MAX_ELEMENT_SIZE];
     std::string key = "hdmioutput.resources." + std::to_string(resourceIndex) + ".supportedScanInformation." + std::to_string(scanIndex);
     UT_KVP_PROFILE_GET_STRING(key.c_str(), scanString);
-    
+
     // Map ScanInformation enum strings to numeric values
     std::string scanStr(scanString);
     if (scanStr == "NO_DATA") return static_cast<int32_t>(ScanInformation::NO_DATA);
@@ -407,17 +407,17 @@ std::string getProfileSupportedHDCPProtocolVersion(int resourceIndex, int versio
 HDCPProtocolVersion getProfileMaxSupportedHDCPProtocolVersion(int resourceIndex) {
     int versionCount = getProfileSupportedHDCPProtocolVersionCount(resourceIndex);
     HDCPProtocolVersion maxVersion = HDCPProtocolVersion::UNDEFINED;
-    
+
     for (int i = 0; i < versionCount; i++) {
         std::string versionStr = getProfileSupportedHDCPProtocolVersion(resourceIndex, i);
         HDCPProtocolVersion currentVersion = convertStringToHDCPProtocolVersions(versionStr);
-        
+
         // VERSION_2_X (2) > VERSION_1_X (1) > UNDEFINED (0)
         if (static_cast<int>(currentVersion) > static_cast<int>(maxVersion)) {
             maxVersion = currentVersion;
         }
     }
-    
+
     return maxVersion;
 }
 
