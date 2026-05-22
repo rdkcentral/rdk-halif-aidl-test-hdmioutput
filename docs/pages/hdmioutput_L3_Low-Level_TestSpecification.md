@@ -31,7 +31,7 @@ The goal is to ensure that:
 
 ### References
 - High Level Test Specification - hdmioutput_High-Level_TestSpecification.md
-- [HDMI Output AIDL interface](https://github.com/rdkcentral/rdk-halif-aidl/tree/0.13.1/hdmioutput/)
+- [HDMI Output AIDL interface](https://github.com/rdkcentral/rdk-halif-aidl/tree/0.15.0/hdmioutput/)
 
 ## Level 3 Test Specification
 
