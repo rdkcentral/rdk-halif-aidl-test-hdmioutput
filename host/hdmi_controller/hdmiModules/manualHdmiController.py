@@ -23,8 +23,8 @@
 from abstractHdmiController import HdmiInterface
 
 class manualHdmiController(HdmiInterface):
-    def __init__(self, logger, address, username, password, port=22, prompt='~#', control_port=8080):
-        super().__init__(logger)
+    def __init__(self, logger, address, username, password, port:int=22, prompt:str='~#', control_port:int=8080):
+        super().__init__(logger, address, username, password, port, prompt, control_port)
         self.address = address
         self.username = username
         self.password = password
