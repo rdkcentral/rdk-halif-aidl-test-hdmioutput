@@ -108,7 +108,7 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateAfterStartCallback(hdmiOutputHelperCla
         time.sleep(20)
         hpd_sequence = ports_config[portid]['hpd_sequence']
         for hpd in hpd_sequence:
-            self.hdmiController.setHotplugState(portid, hpd)
+            self.hdmiController.setHotplugState(portid, hpd, sinkversion)
             if hpd:
                 self.hdmiController.setHDCPStatus(portid, "UNAUTHENTICATED", "UNDEFINED")
                 if hdcp_supported:
@@ -158,7 +158,7 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateAfterStartCallback(hdmiOutputHelperCla
                     )
                 self.utMenu.start()
                 self.log.info(f"[testFunction] port={port_id} - asserting hotplug CONNECTED")
-                self.hdmiController.setHotplugState(port_id, connect_state)
+                self.hdmiController.setHotplugState(port_id, connect_state, sinkversion)
                 if connect_state:
                     edid_data = ports_config[port_id]['expected_edid']
                     self.hdmiController.sendEDIDRead(port_id, edid_data)

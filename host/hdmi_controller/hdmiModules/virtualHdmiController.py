@@ -76,7 +76,7 @@ class virtualHdmiController(HdmiInterface):
         return self.utPlaneController.sendMessage(yaml_str)
         
 
-    def setHotplugState(self, port: int, connected: bool):
+    def setHotplugState(self, port: int, connected: bool, version: str):
         with open(HOTPLUG_STATE_CMD_TEMPLATE, 'r') as f:
             msg = yaml.safe_load(f)
         msg['hdmioutput']['params']['port'] = port
