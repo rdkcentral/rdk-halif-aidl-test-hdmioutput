@@ -61,11 +61,11 @@ class hdmiOutputHelperClass(utHelperClass):
 
         # Parse device configuration
         self.deviceTestSetup = self.cpe.get("test")
-        self.targetWorkspace = os.path.join(self.cpe.get("target_directory"), self.moduleName)
+        self.targetWorkspace = os.path.join(self.cpe.get("target_directory"), self.moduleName).replace("\\", "/")
         profileFileFromConfig = self.deviceTestSetup.get("profile")
         # The moduleHFPFile should be the file available in hdmioutput/profiles path
         profileFileTmp = hfpfile or profileFileFromConfig
-        self.moduleHFPFile = os.path.join(dir_path, profileFileTmp)
+        self.moduleHFPFile = os.path.join(dir_path, profileFileTmp).replace("\\", "/")
 
         if (self.moduleName == "VTS"):
             # profileOnTarget for unifiedVTS is the one available in profiles path of unifiedVTS repo
@@ -79,7 +79,7 @@ class hdmiOutputHelperClass(utHelperClass):
         self.waitTime = 500
 
         # Load test menu and test case configuration files
-        self.l3TestConfigFile = HDMIOUTPUT_L3_TEST_CONFIG_FILE
+        self.l3TestConfigFile = HDMIOUTPUT_L3_TEST_CONFIG_FILE.replace("\\", "/")
         if testMenuConfigFile is not None:
             # this if code part is for unifiedVTS
             hdmioutputTestMenuConfigFile = testMenuConfigFile
@@ -102,10 +102,10 @@ class hdmiOutputHelperClass(utHelperClass):
         self.utilities.change_directory(self.hal_session, self.targetWorkspace)
         for artifact in self.testMenuConfiguration.test.artifacts:
             if artifactDirPath is None:
-                filesPath = os.path.join(dir_path, artifact)
+                filesPath = os.path.join(dir_path, artifact).replace("\\", "/")
             else:
                 # this if code part is for unifiedVTS
-                filesPath = os.path.join(artifactDirPath, artifact)
+                filesPath = os.path.join(artifactDirPath, artifact).replace("\\", "/")
             self.hal_session.write("ls " + self.targetWorkspace + "/" + os.path.basename(artifact) + "\n")
             res = self.hal_session.read_until(self.hal_session.prompt, timeout=5)
             if "No such file or directory" not in res:
