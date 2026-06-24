@@ -47,8 +47,10 @@ from raft.framework.plugins.ut_raft.utSuiteNavigator import UTSuiteNavigatorClas
 from raft.framework.plugins.ut_raft.utBaseUtils import utBaseUtils
 
 class hdmiOutputHelperClass(utHelperClass):
-    def __init__(self, testName:str, qcId:str, log:logModule=None ):
-        self.moduleName = "hdmioutput"
+    def __init__(self, testName:str, qcId:str, log:logModule=None, hfpfile:str=None, testMenuConfigFile:str=None, moduleName:str=None, artifactDirPath:str=None ):
+        if moduleName is None:
+            moduleName = "hdmioutput"
+        self.moduleName = moduleName
         self.testLevel = "L3"
         super().__init__(testName, qcId, log)
 
@@ -59,21 +61,38 @@ class hdmiOutputHelperClass(utHelperClass):
 
         # Parse device configuration
         self.deviceTestSetup = self.cpe.get("test")
-        self.targetWorkspace = os.path.join(self.cpe.get("target_directory"), self.moduleName)
-        self.moduleHFPFile = os.path.join(dir_path, self.deviceTestSetup.get("profile"))
-        profileOnTarget = os.path.join(self.targetWorkspace, "profiles")
-        profileOnTarget = os.path.join(profileOnTarget, os.path.basename(self.moduleHFPFile))
+        self.targetWorkspace = os.path.join(self.cpe.get("target_directory"), self.moduleName).replace("\\", "/")
+        profileFileFromConfig = self.deviceTestSetup.get("profile")
+        # The moduleHFPFile should be the file available in hdmioutput/profiles path
+        profileFileTmp = hfpfile or profileFileFromConfig
+        self.moduleHFPFile = os.path.join(dir_path, profileFileTmp).replace("\\", "/")
+
+        if (self.moduleName == "VTS"):
+            # profileOnTarget for unifiedVTS is the one available in profiles path of unifiedVTS repo
+            profileOnTarget = os.path.join(self.targetWorkspace, "bin", "profiles")
+            profileOnTarget = os.path.join(profileOnTarget, os.path.basename(profileFileFromConfig))
+        else:
+            # profileOnTarget for specificmodule is the one available in profiles path of test repo
+            profileOnTarget = os.path.join(self.targetWorkspace, "profiles")
+            profileOnTarget = os.path.join(profileOnTarget, os.path.basename(self.moduleHFPFile))
         profileOnTarget = profileOnTarget.replace("\\", "/")
         self.waitTime = 500
 
         # Load test menu and test case configuration files
-        self.l3TestConfigFile = HDMIOUTPUT_L3_TEST_CONFIG_FILE
-        self.testMenuConfiguration = ConfigRead(HDMIOUTPUT_TEST_MENU_CONFIGURATION_FILE, self.moduleName)
-        self.testCaseConfiguration = ConfigRead(HDMIOUTPUT_TESTCASES_CONFIGURATION_FILE, self.moduleName)
+        self.l3TestConfigFile = HDMIOUTPUT_L3_TEST_CONFIG_FILE.replace("\\", "/")
+        if testMenuConfigFile is not None:
+            # this if code part is for unifiedVTS
+            hdmioutputTestMenuConfigFile = testMenuConfigFile
+        else:
+            hdmioutputTestMenuConfigFile = HDMIOUTPUT_TEST_MENU_CONFIGURATION_FILE
+
+        self.testMenuConfiguration = ConfigRead(hdmioutputTestMenuConfigFile, self.moduleName)
+        if (self.moduleName != "VTS"):
+            self.testCaseConfiguration = ConfigRead(HDMIOUTPUT_TESTCASES_CONFIGURATION_FILE, self.moduleName) # Only needed while running individual tests
         self.testMenuConfiguration.test.execute = self.testMenuConfiguration.test.execute + f" -p {profileOnTarget}"
 
         # Establish HAL session
-        self.hal_session = self.dut.getConsoleSession("ssh_hal_test")
+        self.hal_session = self.dut.getConsoleSession("ssh_hal_test_0")
 
         # Initialize UT menu navigator and utilities
         self.utMenu = UTSuiteNavigatorClass(self.testMenuConfiguration, None, self.hal_session)
@@ -82,13 +101,27 @@ class hdmiOutputHelperClass(utHelperClass):
         # Copy required artifacts to target device
         self.utilities.change_directory(self.hal_session, self.targetWorkspace)
         for artifact in self.testMenuConfiguration.test.artifacts:
-            filesPath = os.path.join(dir_path, artifact)
+            if artifactDirPath is None:
+                filesPath = os.path.join(dir_path, artifact).replace("\\", "/")
+            else:
+                # this if code part is for unifiedVTS
+                filesPath = os.path.join(artifactDirPath, artifact).replace("\\", "/")
+            self.hal_session.write("ls " + self.targetWorkspace + "/" + os.path.basename(artifact) + "\n")
+            res = self.hal_session.read_until(self.hal_session.prompt, timeout=5)
+            if "No such file or directory" not in res:
+                continue  # File already exists on target, skip copying and continue with next artifact
             self.utilities.sftpCopy(self.hal_session, filesPath, self.targetWorkspace)
 
             if tarfile.is_tarfile(filesPath):
                 target_tarfile = os.path.join(self.targetWorkspace, os.path.basename(artifact))
                 target_tarfile = target_tarfile.replace('\\', '/')
                 self.utilities.untar(self.hal_session, target_tarfile, self.targetWorkspace)
+
+        if (self.moduleName == "VTS"):
+            #unified VTS repo target workspace needs a /bin/ after module name
+            self.targetWorkspace = os.path.join(self.targetWorkspace, "bin")
+            self.targetWorkspace = self.targetWorkspace.replace("\\", "/")
+        self.moduleName = "hdmioutput" #change the modulename to interface name as its being used inside test files
 
     def hdmiOutputReadYaml(self, yaml_path: str) -> dict:
         """
