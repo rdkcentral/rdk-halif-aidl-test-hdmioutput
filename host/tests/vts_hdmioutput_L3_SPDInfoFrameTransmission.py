@@ -55,7 +55,7 @@ class VTS_HDMIOUTPUT_L3_SPDInfoFrameTransmission(hdmiOutputHelperClass):
     to allow optional manual verification on an HDMI analyser.
     """
 
-    def __init__(self, log: logModule = None):
+    def __init__(self, log: logModule = None, hfpfile:str=None, testMenuConfigFile=None, moduleName=None, artifactDirPath=None):
         """
         Initializes the test class.
 
@@ -64,7 +64,7 @@ class VTS_HDMIOUTPUT_L3_SPDInfoFrameTransmission(hdmiOutputHelperClass):
         """
         self.testName = "HdmiOutput_L3_SPDInfoFrameTransmission"
         qcId = "4"
-        super().__init__(self.testName, qcId, log)
+        super().__init__(self.testName, qcId, log, hfpfile, testMenuConfigFile, moduleName, artifactDirPath)
 
         self.hdmiController = HdmiController(
             self.log, self.dut.rawConfig.get("dut").get("hdmiController")

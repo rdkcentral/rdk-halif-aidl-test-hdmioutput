@@ -23,7 +23,7 @@
 from abc import ABC, abstractmethod
 
 class HdmiInterface(ABC):
-    def __init__(self, logger):
+    def __init__(self, logger, address, username, password, port:int=22, prompt:str='~#', control_port:int=8080):
         self._log = logger
 
     @abstractmethod

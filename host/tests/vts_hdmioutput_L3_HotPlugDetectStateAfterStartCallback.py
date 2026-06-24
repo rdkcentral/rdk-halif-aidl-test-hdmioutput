@@ -51,13 +51,13 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateAfterStartCallback(hdmiOutputHelperCla
              e. Log the step result and stop the menu.
         2. Aggregate results for all ports.
     """
-    def __init__(self, log: logModule = None):
+    def __init__(self, log: logModule = None, hfpfile:str=None, testMenuConfigFile=None, moduleName=None, artifactDirPath=None):
         self.testName = "HdmiOutput_L3_HotPlugDetectStateAfterStartCallback"
         self.sinkHDCPVersions = ["VERSION_2_X", "VERSION_1_X", "UNDEFINED"]
         #self.sinkHDCPVersions = ["VERSION_1_X"]
         qcId = "2"
         
-        super().__init__(self.testName, qcId, log)
+        super().__init__(self.testName, qcId, log, hfpfile, testMenuConfigFile, moduleName, artifactDirPath)
         self.hdmiController = HdmiController(
             self.log, self.dut.rawConfig.get("dut").get("hdmiController")
         )
