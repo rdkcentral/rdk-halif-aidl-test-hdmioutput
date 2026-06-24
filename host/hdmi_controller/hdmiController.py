@@ -44,7 +44,7 @@ class HdmiController:
                                                     password=config.get('password',''),
                                                     port=config.get('port',22),
                                                     prompt=config.get('prompt', '~#'),
-                                                    control_port=config.get('control_port', 8080))
+                                                    control_port=config.get('sink_control_port', 8080))
         elif self.controllerType == 'manual-hdmi-controller':
             self.controller = manualHdmiController(self._log,
                                                     address=config.get('address'),
@@ -52,7 +52,7 @@ class HdmiController:
                                                     password=config.get('password',''),
                                                     port=config.get('port',22),
                                                     prompt=config.get('prompt', '~#'),
-                                                    control_port=config.get('control_port', 8080))
+                                                    control_port=config.get('sink_control_port', 8080))
         else:
             raise ValueError(f"Unsupported HDMI controller type: {self.controllerType}")
 
