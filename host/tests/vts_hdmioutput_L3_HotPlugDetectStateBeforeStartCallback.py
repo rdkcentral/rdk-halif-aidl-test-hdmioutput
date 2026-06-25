@@ -29,7 +29,6 @@ import threading
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_path, "../"))
 
-from hdmi_controller.hdmiController import HdmiController
 from raft.framework.plugins.ut_raft.configRead import ConfigRead
 from raft.framework.core.logModule import logModule
 from raft.framework.plugins.ut_raft import utHelperClass
@@ -55,9 +54,6 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateBeforeStartCallback(hdmiOutputHelperCl
         self.testName = "HdmiOutput_L3_HotPlugDetectStateBeforeStartCallback"
         qcId = "1"
         super().__init__(self.testName, qcId, log, hfpfile, testMenuConfigFile, moduleName, artifactDirPath)
-        self.hdmiController = HdmiController(
-            self.log, self.dut.rawConfig.get("dut").get("hdmiController")
-        )
 
     def updateTestConfiguration(self, testName: str, portid: int):
         """
@@ -91,17 +87,17 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateBeforeStartCallback(hdmiOutputHelperCl
         time.sleep(2)
         ports_config = self.test_config[self.moduleName][self.testLevel][self.testcase]['ports']
         if connect_state:
-            self.hdmiController.setHDCPStatus(portid, "UNAUTHENTICATED", "UNDEFINED")
+            self.hdmiAnalyserController.setHDCPStatus(portid, "UNAUTHENTICATED", "UNDEFINED")
         
         time.sleep(20)
         hpd_sequence = ports_config[portid]['hpd_sequence']
         expected_hdcp_version = ports_config[portid]['expected_hdcp_version']
         for hpd in hpd_sequence:
-            self.hdmiController.setHotplugState(portid, hpd)
+            self.hdmiAnalyserController.setHotplugState(portid, hpd)
             if hpd:
-                self.hdmiController.setHDCPStatus(portid, "UNAUTHENTICATED", "UNDEFINED")
+                self.hdmiAnalyserController.setHDCPStatus(portid, "UNAUTHENTICATED", "UNDEFINED")
             else:
-                self.hdmiController.setHDCPStatus(portid, "UNKNOWN", "UNDEFINED")
+                self.hdmiAnalyserController.setHDCPStatus(portid, "UNKNOWN", "UNDEFINED")
 
         time.sleep(1)
 
@@ -143,10 +139,10 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateBeforeStartCallback(hdmiOutputHelperCl
                 )
             self.utMenu.start()
             self.log.info(f"[testFunction] port={port_id} - asserting hotplug CONNECTED")
-            self.hdmiController.setHotplugState(port_id, connect_state)
+            self.hdmiAnalyserController.setHotplugState(port_id, connect_state)
             if connect_state:
                 edid_data = ports_config[port_id]['expected_edid']
-                self.hdmiController.sendEDIDRead(port_id, edid_data)
+                self.hdmiAnalyserController.sendEDIDRead(port_id, edid_data)
             time.sleep(1)
             self.connectThreadObj.start()
 
