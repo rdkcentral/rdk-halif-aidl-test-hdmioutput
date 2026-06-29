@@ -95,7 +95,7 @@ class HdmiController:
         """
         return self.controller.setHDCPStatus(port, status, version)
 
-    def setHotplugState(self, port: int, connected: bool):
+    def setHotplugState(self, port: int, connected: bool, version: str="VERSION_2_X"):
         """
         Set hotplug state for the HDMI output port.
 
@@ -106,7 +106,7 @@ class HdmiController:
         Returns:
             bool: True if message/event handled successfully.
         """
-        return self.controller.setHotplugState(port, connected)
+        return self.controller.setHotplugState(port, connected, version)
 
 
 # Backward compatibility alias

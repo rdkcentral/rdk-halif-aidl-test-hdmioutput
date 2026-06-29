@@ -39,5 +39,5 @@ class HdmiInterface(ABC):
         pass
 
     @abstractmethod
-    def setHotplugState(self, port: int, connected: bool):
+    def setHotplugState(self, port: int, connected: bool, version: str):
         pass
