@@ -153,7 +153,6 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateAfterStartCallback(hdmiOutputHelperCla
                     )
                 self.utMenu.start()
                 self.log.info(f"[testFunction] port={port_id} - asserting hotplug CONNECTED")
-                print(self.hdmiAnalyserController.setHotplugState.__func__.__code__.co_argcount)
                 self.hdmiAnalyserController.setHotplugState(port_id, connect_state, sinkversion)
                 if connect_state:
                     edid_data = ports_config[port_id]['expected_edid']
