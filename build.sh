@@ -382,7 +382,7 @@ setup_binder_sdk()
 }
 
 ###############################################################################
-# Build the sensor HAL module from the released snapshot pinned in
+# Build the hdmioutput HAL module from the released snapshot pinned in
 # versions_released.yaml, then create the unversioned softlink.
 # Skips the build entirely if the sentinel .halif_modules_ready already exists.
 ###############################################################################
@@ -727,6 +727,8 @@ clean_test()
 {
     echo -e "${BOLD}removing *.o${RESET}"
 
+    rm -rf test/*.o
+    rm -rf ${TOP}/src/*.o
     make clean
     make -C ${AIDL_LIB_DIR} clean
 
