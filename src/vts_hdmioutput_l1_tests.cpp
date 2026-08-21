@@ -437,7 +437,7 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, getCapabilities_pos)
         }
 
         // Verify supported extended colorimetries - count and values
-        key = "hdmioutput.resources." + std::to_string(i) + ".supportedExtendedColorimetries";
+        key = "hdmioutput.resources." + std::to_string(i) + ".supportedExtendedColorimetry";
         uint32_t extColorimetryCount = UT_KVP_PROFILE_GET_LIST_COUNT(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportedExtendedColorimetries.size(), extColorimetryCount);
         

@@ -54,7 +54,7 @@ hdmioutput:
 
       # Supported extended colorimetry values (from ExtendedColorimetry.aidl)
       # Used when Colorimetry is set to EXTENDED_COLORIMETRY
-      supportedExtendedColorimetries:
+      supportedExtendedColorimetry:
         - XV_YCC_601
         - XV_YCC_709
         - S_YCC_601
