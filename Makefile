@@ -58,6 +58,8 @@ CXXFLAGS := -std=c++17 -g3 -O0 \
             -DRDK_HALIF_AIDL_VERSION=\"$(RDK_HALIF_AIDL_VERSION)\" \
             -DHDMIOUTPUT_VERSION=\"$(HDMIOUTPUT_VERSION)\"
 $(info CXXFLAGS: $(CXXFLAGS))
+
+
 CXXFLAGS += -DBUILD_TIMESTAMP=\"$(BUILD_TIMESTAMP)\"
 
 # TODO: remove this once the ut-core implements runtime logging configuration
@@ -68,14 +70,22 @@ endif
 SRC_DIRS := $(HDMIOUTPUT_TEST_DIR)
 SRC_DIRS += $(ROOT_DIR)/test
 
-INC_DIRS := $(ROOT_DIR)/build/current/h/
+HALIF_OUT_DIR        := $(ROOT_DIR)/rdk-halif-aidl/out
+HALIF_LIB_DIR        := $(HALIF_OUT_DIR)/target/lib/rdk-halif-aidl
+
+-include $(HALIF_OUT_DIR)/halif_generated.mk
+
+INC_DIRS := $(HALIF_INC_DIRS)
 INC_DIRS += $(ROOT_DIR)/build/usr/include
 INC_DIRS += $(SRC_DIRS)
 
-XLDFLAGS := -L$(ROOT_DIR)/build/usr/lib
-XLDFLAGS += -Wl,-rpath-link=$(ROOT_DIR)/build/usr/lib -Wl,--export-dynamic -Wl,-rpath,.
-XLDFLAGS += -lssl -lcrypto -lbinder -lutils
-XLDFLAGS += -laidl_client
+XLDFLAGS := -rdynamic
+XLDFLAGS += -L$(ROOT_DIR)/build/usr/lib
+XLDFLAGS += -Wl,-rpath-link=$(ROOT_DIR)/build/usr/lib
+XLDFLAGS += -L$(HALIF_LIB_DIR)
+XLDFLAGS += -Wl,-rpath-link=$(HALIF_LIB_DIR)
+XLDFLAGS += $(HALIF_MODULE_LIBS)
+XLDFLAGS += -lbinder -lutils
 
 # required for std::optional
 CXXFLAGS += -std=c++17
@@ -106,3 +116,5 @@ $(TARGET_EXEC):
 
 clean:
 	make -C $(UT_CORE_DIR) -j TARGET=$(TARGET) VARIANT=$(VARIANT) clean
+	rm -rf $(HDMIOUTPUT_TEST_DIR)/*.o
+	rm -rf $(ROOT_DIR)/test/*.o
