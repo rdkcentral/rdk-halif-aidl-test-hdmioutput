@@ -51,12 +51,6 @@ export RDK_HALIF_AIDL_VERSION=develop
 export UT_LOG_LEVEL=4
 ```
 
-Enable UT logs (optional):
-
-```bash
-export ENABLE_UT_INFO_LOGGING=1
-```
-
 Build:
 
 ```bash
@@ -231,7 +225,7 @@ Host-side implementation is in `host/tests` and covers:
 
 5. **VideoPlaybackEventVerification**
    - Verify Infoframes received after active video playback
-  
+
 ## Note
 
 ### Test Setup on vDevice

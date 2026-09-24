@@ -61,7 +61,8 @@
  * @file vts_hdmioutput.h
  *
  */
-
+#ifndef __VTS_HDMIOUTPUT_H__
+#define __VTS_HDMIOUTPUT_H__
 
 #include <gtest/gtest.h>
 #include <binder/IServiceManager.h>
@@ -458,7 +459,7 @@ public:
 
     // Event retrieval method
     bool getNextStateChanges(std::pair<::com::rdk::hal::hdmioutput::State, ::com::rdk::hal::hdmioutput::State>& stateChanges);
-    
+
     // Utility methods
     void reset();
     bool hasStateChanged() const;
@@ -492,13 +493,13 @@ public:
     bool getNextHDCPStatusChange(std::pair<::com::rdk::hal::hdmioutput::HDCPStatus, ::com::rdk::hal::hdmioutput::HDCPProtocolVersion>& hdcpInfo, chrono::milliseconds timeout = chrono::milliseconds(0));
     bool getNextEDID(::std::vector<uint8_t>& edid, chrono::milliseconds timeout = chrono::milliseconds(0));
     bool getNextVICChange(int32_t& vic, chrono::milliseconds timeout = chrono::milliseconds(0));
-    
+
     // Synchronization helpers - wait for specific callback counts
     bool waitForHPDCount(int32_t count, chrono::milliseconds timeout);
     bool waitForHDCPStatusCount(int32_t count, chrono::milliseconds timeout);
     bool waitForEDIDCount(int32_t count, chrono::milliseconds timeout);
     bool waitForFrameRateCount(int32_t count, chrono::milliseconds timeout);
-    
+
     // Utility methods
     void reset();
     void clearHPDQueue();
@@ -512,27 +513,27 @@ public:
 
 private:
     sp<com::rdk::hal::hdmioutput::IHDMIOutput> mHDMIOutput;
-    
+
     mutable std::mutex mHPDStateMutex;
     std::condition_variable mHPDStateCV;
     std::queue<bool> mHPDStateQueue;
-    
+
     mutable std::mutex mFrameRateMutex;
     std::condition_variable mFrameRateCV;
     std::queue<bool> mFrameRateQueue;
-    
+
     mutable std::mutex mHDCPStatusMutex;
     std::condition_variable mHDCPStatusCV;
     std::queue<std::pair<::com::rdk::hal::hdmioutput::HDCPStatus, ::com::rdk::hal::hdmioutput::HDCPProtocolVersion>> mHDCPStatusQueue;
-    
+
     mutable std::mutex mEDIDMutex;
     std::condition_variable mEDIDCV;
     std::queue<::std::vector<uint8_t>> mEDIDQueue;
-    
+
     mutable std::mutex mVICChangeMutex;
     std::condition_variable mVICChangeCV;
     std::queue<int32_t> mVICChangeQueue;
-    
+
     // Legacy single-value storage for backward compatibility
     bool m_hpdStateChanged{false};
     bool m_hpdState{false};
@@ -544,6 +545,7 @@ private:
     ::std::vector<uint8_t> m_edid;
 };
 
+#endif // __VTS_HDMIOUTPUT_H__
 /**
 * @} // End of HDMIOUTPUT_HALTEST_CLASS
 * @} // End of HDMIOUTPUT_HALTEST
