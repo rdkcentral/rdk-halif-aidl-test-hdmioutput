@@ -91,9 +91,9 @@ const ut_control_keyStringMapping_t statusHdmiOutputException_mapTable[] =
 /* HDCPProtocolVersion */
 const ut_control_keyStringMapping_t hdcpProtocolVersion_mapTable[] =
 {
-    {"UNDEFINED",    (int32_t) HDCPProtocolVersion::UNDEFINED},
-    {"VERSION_1_X",  (int32_t) HDCPProtocolVersion::VERSION_1_X},
-    {"VERSION_2_X",  (int32_t) HDCPProtocolVersion::VERSION_2_X},
+    {"UNDEFINED",    (int32_t) hdmioutput::HDCPProtocolVersion::UNDEFINED},
+    {"VERSION_1_X",  (int32_t) hdmioutput::HDCPProtocolVersion::VERSION_1_X},
+    {"VERSION_2_X",  (int32_t) hdmioutput::HDCPProtocolVersion::VERSION_2_X},
     {NULL, -1}
 };
 
@@ -131,173 +131,173 @@ std::string hdmioutputVecByteToHexString(const std::vector<uint8_t>& data)
     return oss.str();
 }
 
-HDROutputMode convertStringToHDROutputMode(const std::string &val) {
-  HDROutputMode mode;
+hdmioutput::HDROutputMode convertStringToHDROutputMode(const std::string &val) {
+  hdmioutput::HDROutputMode mode;
   if (val == "AUTO") {
-    mode = HDROutputMode::AUTO;
+    mode = hdmioutput::HDROutputMode::AUTO;
   } else if (val == "HLG") {
-    mode = HDROutputMode::HLG;
+    mode = hdmioutput::HDROutputMode::HLG;
   } else if (val == "HDR10") {
-    mode = HDROutputMode::HDR10;
+    mode = hdmioutput::HDROutputMode::HDR10;
   } else if (val == "HDR10_PLUS") {
-    mode = HDROutputMode::HDR10_PLUS;
+    mode = hdmioutput::HDROutputMode::HDR10_PLUS;
   } else if (val == "DOLBY_VISION") {
-    mode = HDROutputMode::DOLBY_VISION;
+    mode = hdmioutput::HDROutputMode::DOLBY_VISION;
   }
   return mode;
 }
 
-HDCPProtocolVersion convertStringToHDCPProtocolVersions(const std::string &val) {
-  HDCPProtocolVersion mode;
+hdmioutput::HDCPProtocolVersion convertStringToHDCPProtocolVersions(const std::string &val) {
+  hdmioutput::HDCPProtocolVersion mode;
   if (val == "VERSION_1_X") {
-    mode = HDCPProtocolVersion::VERSION_1_X;
+    mode = hdmioutput::HDCPProtocolVersion::VERSION_1_X;
   } else if (val == "VERSION_2_X") {
-    mode = HDCPProtocolVersion::VERSION_2_X;
+    mode = hdmioutput::HDCPProtocolVersion::VERSION_2_X;
   } else {
-    mode = HDCPProtocolVersion::UNDEFINED;
+    mode = hdmioutput::HDCPProtocolVersion::UNDEFINED;
   }
   return mode;
 }
 
-Colorimetry convertStringToColorimetry(const std::string &val) {
-  Colorimetry mode;
+hdmioutput::Colorimetry convertStringToColorimetry(const std::string &val) {
+  hdmioutput::Colorimetry mode;
   if (val == "NO_DATA") {
-    mode = Colorimetry::NO_DATA;
+    mode = hdmioutput::Colorimetry::NO_DATA;
   } else if (val == "SMPTE_170M") {
-    mode = Colorimetry::SMPTE_170M;
+    mode = hdmioutput::Colorimetry::SMPTE_170M;
   } else if (val == "ITU_R_BT709") {
-    mode = Colorimetry::ITU_R_BT709;
+    mode = hdmioutput::Colorimetry::ITU_R_BT709;
   } else if (val == "EXTENDED_COLORIMETRY") {
-    mode = Colorimetry::EXTENDED_COLORIMETRY;
+    mode = hdmioutput::Colorimetry::EXTENDED_COLORIMETRY;
   }
   return mode;
 }
 
-PixelFormat convertStringToPixelFormat(const std::string &val) {
-  PixelFormat mode;
+hdmioutput::PixelFormat convertStringToPixelFormat(const std::string &val) {
+  hdmioutput::PixelFormat mode;
   if (val == "RGB_444") {
-    mode = PixelFormat::RGB_444;
+    mode = hdmioutput::PixelFormat::RGB_444;
   } else if (val == "YCBCR_422") {
-    mode = PixelFormat::YCBCR_422;
+    mode = hdmioutput::PixelFormat::YCBCR_422;
   } else if (val == "YCBCR_444") {
-    mode = PixelFormat::YCBCR_444;
+    mode = hdmioutput::PixelFormat::YCBCR_444;
   } else if (val == "YCBCR_420") {
-    mode = PixelFormat::YCBCR_420;
+    mode = hdmioutput::PixelFormat::YCBCR_420;
   }
   return mode;
 }
 
-SPDSource convertStringToSPDSource(const std::string &val) {
-  SPDSource source;
+hdmioutput::SPDSource convertStringToSPDSource(const std::string &val) {
+  hdmioutput::SPDSource source;
   if (val == "UNKNOWN") {
-    source = SPDSource::UNKNOWN;
+    source = hdmioutput::SPDSource::UNKNOWN;
   } else if (val == "DIGITAL_STB") {
-    source = SPDSource::DIGITAL_STB;
+    source = hdmioutput::SPDSource::DIGITAL_STB;
   } else if (val == "DVD_PLAYER") {
-    source = SPDSource::DVD_PLAYER;
+    source = hdmioutput::SPDSource::DVD_PLAYER;
   } else if (val == "D_VHS") {
-    source = SPDSource::D_VHS;
+    source = hdmioutput::SPDSource::D_VHS;
   } else if (val == "HDD_VIDEORECORDER") {
-    source = SPDSource::HDD_VIDEORECORDER;
+    source = hdmioutput::SPDSource::HDD_VIDEORECORDER;
   } else if (val == "DVC") {
-    source = SPDSource::DVC;
+    source = hdmioutput::SPDSource::DVC;
   } else if (val == "DSC") {
-    source = SPDSource::DSC;
+    source = hdmioutput::SPDSource::DSC;
   } else if (val == "VIDEO_CD") {
-    source = SPDSource::VIDEO_CD;
+    source = hdmioutput::SPDSource::VIDEO_CD;
   } else if (val == "GAME") {
-    source = SPDSource::GAME;
+    source = hdmioutput::SPDSource::GAME;
   } else if (val == "PC_GENERAL") {
-    source = SPDSource::PC_GENERAL;
+    source = hdmioutput::SPDSource::PC_GENERAL;
   } else if (val == "BLU_RAY_DISC") {
-    source = SPDSource::BLU_RAY_DISC;
+    source = hdmioutput::SPDSource::BLU_RAY_DISC;
   } else if (val == "SUPER_AUDIO_CD") {
-    source = SPDSource::SUPER_AUDIO_CD;
+    source = hdmioutput::SPDSource::SUPER_AUDIO_CD;
   } else if (val == "HD_DVD") {
-    source = SPDSource::HD_DVD;
+    source = hdmioutput::SPDSource::HD_DVD;
   } else {
-    source = SPDSource::UNKNOWN;
+    source = hdmioutput::SPDSource::UNKNOWN;
   }
   return source;
 }
 
-FreeSync convertStringToFreeSync(const std::string &val) {
-  FreeSync freeSync;
+hdmioutput::FreeSync convertStringToFreeSync(const std::string &val) {
+  hdmioutput::FreeSync freeSync;
   if (val == "UNSUPPORTED") {
-    freeSync = FreeSync::UNSUPPORTED;
+    freeSync = hdmioutput::FreeSync::UNSUPPORTED;
   } else if (val == "FREESYNC") {
-    freeSync = FreeSync::FREESYNC;
+    freeSync = hdmioutput::FreeSync::FREESYNC;
   } else if (val == "FREESYNC_PREMIUM") {
-    freeSync = FreeSync::FREESYNC_PREMIUM;
+    freeSync = hdmioutput::FreeSync::FREESYNC_PREMIUM;
   } else if (val == "FREESYNC_PREMIUM_PRO") {
-    freeSync = FreeSync::FREESYNC_PREMIUM_PRO;
+    freeSync = hdmioutput::FreeSync::FREESYNC_PREMIUM_PRO;
   } else {
-    freeSync = FreeSync::UNSUPPORTED;
+    freeSync = hdmioutput::FreeSync::UNSUPPORTED;
   }
   return freeSync;
 }
 
-HDMIVersion convertStringToHDMIVersion(const std::string &val) {
-  HDMIVersion version;
+hdmioutput::HDMIVersion convertStringToHDMIVersion(const std::string &val) {
+  hdmioutput::HDMIVersion version;
   if (val == "HDMI_1_3") {
-    version = HDMIVersion::HDMI_1_3;
+    version = hdmioutput::HDMIVersion::HDMI_1_3;
   } else if (val == "HDMI_1_4") {
-    version = HDMIVersion::HDMI_1_4;
+    version = hdmioutput::HDMIVersion::HDMI_1_4;
   } else if (val == "HDMI_2_0") {
-    version = HDMIVersion::HDMI_2_0;
+    version = hdmioutput::HDMIVersion::HDMI_2_0;
   } else if (val == "HDMI_2_1") {
-    version = HDMIVersion::HDMI_2_1;
+    version = hdmioutput::HDMIVersion::HDMI_2_1;
   } else {
-    version = HDMIVersion::HDMI_1_3;
+    version = hdmioutput::HDMIVersion::HDMI_1_3;
   }
   return version;
 }
 
-VIC convertStringToVIC(const std::string &val) {
+hdmioutput::VIC convertStringToVIC(const std::string &val) {
   // Extract numeric value from string like "VIC1_640_480_P_60_4_3"
   if (val.find("VIC") == 0) {
     size_t pos = 3; // After "VIC"
     size_t end = val.find('_', pos);
     if (end != std::string::npos) {
       int vicNum = std::stoi(val.substr(pos, end - pos));
-      return static_cast<VIC>(vicNum);
+      return static_cast<hdmioutput::VIC>(vicNum);
     }
   }
-  return VIC::VIC0_UNAVAILABLE;
+  return hdmioutput::VIC::VIC0_UNAVAILABLE;
 }
 
-ExtendedColorimetry convertStringToExtendedColorimetry(const std::string &val) {
-  ExtendedColorimetry extColor;
+hdmioutput::ExtendedColorimetry convertStringToExtendedColorimetry(const std::string &val) {
+  hdmioutput::ExtendedColorimetry extColor;
   if (val == "XV_YCC_601") {
-    extColor = ExtendedColorimetry::XV_YCC_601;
+    extColor = hdmioutput::ExtendedColorimetry::XV_YCC_601;
   } else if (val == "XV_YCC_709") {
-    extColor = ExtendedColorimetry::XV_YCC_709;
+    extColor = hdmioutput::ExtendedColorimetry::XV_YCC_709;
   } else if (val == "S_YCC_601") {
-    extColor = ExtendedColorimetry::S_YCC_601;
+    extColor = hdmioutput::ExtendedColorimetry::S_YCC_601;
   } else if (val == "OP_YCC_601") {
-    extColor = ExtendedColorimetry::OP_YCC_601;
+    extColor = hdmioutput::ExtendedColorimetry::OP_YCC_601;
   } else if (val == "OP_RGB") {
-    extColor = ExtendedColorimetry::OP_RGB;
+    extColor = hdmioutput::ExtendedColorimetry::OP_RGB;
   } else if (val == "BT2020_C_YCC") {
-    extColor = ExtendedColorimetry::BT2020_C_YCC;
+    extColor = hdmioutput::ExtendedColorimetry::BT2020_C_YCC;
   } else if (val == "BT2020_RGB_YCC") {
-    extColor = ExtendedColorimetry::BT2020_RGB_YCC;
+    extColor = hdmioutput::ExtendedColorimetry::BT2020_RGB_YCC;
   } else if (val == "ADDITIONAL_COLORIMETRY_EXTENSION") {
-    extColor = ExtendedColorimetry::ADDITIONAL_COLORIMETRY_EXTENSION;
+    extColor = hdmioutput::ExtendedColorimetry::ADDITIONAL_COLORIMETRY_EXTENSION;
   } else {
-    extColor = ExtendedColorimetry::XV_YCC_601;
+    extColor = hdmioutput::ExtendedColorimetry::XV_YCC_601;
   }
   return extColor;
 }
 
-AdditionalColorimetryExtension convertStringToAdditionalColorimetryExtension(const std::string &val) {
-  AdditionalColorimetryExtension addColor;
+hdmioutput::AdditionalColorimetryExtension convertStringToAdditionalColorimetryExtension(const std::string &val) {
+  hdmioutput::AdditionalColorimetryExtension addColor;
   if (val == "DCI_P3_RGB_D65") {
-    addColor = AdditionalColorimetryExtension::DCI_P3_RGB_D65;
+    addColor = hdmioutput::AdditionalColorimetryExtension::DCI_P3_RGB_D65;
   } else if (val == "DCI_P3_RGB_THEATER") {
-    addColor = AdditionalColorimetryExtension::DCI_P3_RGB_THEATER;
+    addColor = hdmioutput::AdditionalColorimetryExtension::DCI_P3_RGB_THEATER;
   } else {
-    addColor = AdditionalColorimetryExtension::DCI_P3_RGB_D65;
+    addColor = hdmioutput::AdditionalColorimetryExtension::DCI_P3_RGB_D65;
   }
   return addColor;
 }
@@ -346,12 +346,12 @@ int32_t getProfileSupportedContentType(int resourceIndex, int typeIndex) {
 
     // Map ContentType enum strings to numeric values
     std::string typeStr(typeString);
-    if (typeStr == "UNSPECIFIED") return static_cast<int32_t>(ContentType::UNSPECIFIED);
-    if (typeStr == "GRAPHICS") return static_cast<int32_t>(ContentType::GRAPHICS);
-    if (typeStr == "PHOTO") return static_cast<int32_t>(ContentType::PHOTO);
-    if (typeStr == "CINEMA") return static_cast<int32_t>(ContentType::CINEMA);
-    if (typeStr == "GAME") return static_cast<int32_t>(ContentType::GAME);
-    return static_cast<int32_t>(ContentType::UNSPECIFIED);
+    if (typeStr == "UNSPECIFIED") return static_cast<int32_t>(hdmioutput::ContentType::UNSPECIFIED);
+    if (typeStr == "GRAPHICS") return static_cast<int32_t>(hdmioutput::ContentType::GRAPHICS);
+    if (typeStr == "PHOTO") return static_cast<int32_t>(hdmioutput::ContentType::PHOTO);
+    if (typeStr == "CINEMA") return static_cast<int32_t>(hdmioutput::ContentType::CINEMA);
+    if (typeStr == "GAME") return static_cast<int32_t>(hdmioutput::ContentType::GAME);
+    return static_cast<int32_t>(hdmioutput::ContentType::UNSPECIFIED);
 }
 
 std::string getProfileSupportedHDRMode(int resourceIndex, int modeIndex) {
@@ -368,12 +368,12 @@ int32_t getProfileSupportedAFD(int resourceIndex, int afdIndex) {
 
     // Map AFD enum strings to numeric values
     std::string afdStr(afdString);
-    if (afdStr == "UNSPECIFIED") return static_cast<int32_t>(AFD::UNSPECIFIED);
-    if (afdStr == "SAME_AS_PICTURE") return static_cast<int32_t>(AFD::SAME_AS_PICTURE);
-    if (afdStr == "CENTER_4_3") return static_cast<int32_t>(AFD::CENTER_4_3);
-    if (afdStr == "CENTER_16_9") return static_cast<int32_t>(AFD::CENTER_16_9);
-    if (afdStr == "CENTER_14_9") return static_cast<int32_t>(AFD::CENTER_14_9);
-    return static_cast<int32_t>(AFD::SAME_AS_PICTURE); // Default to SAME_AS_PICTURE
+    if (afdStr == "UNSPECIFIED") return static_cast<int32_t>(hdmioutput::AFD::UNSPECIFIED);
+    if (afdStr == "SAME_AS_PICTURE") return static_cast<int32_t>(hdmioutput::AFD::SAME_AS_PICTURE);
+    if (afdStr == "CENTER_4_3") return static_cast<int32_t>(hdmioutput::AFD::CENTER_4_3);
+    if (afdStr == "CENTER_16_9") return static_cast<int32_t>(hdmioutput::AFD::CENTER_16_9);
+    if (afdStr == "CENTER_14_9") return static_cast<int32_t>(hdmioutput::AFD::CENTER_14_9);
+    return static_cast<int32_t>(hdmioutput::AFD::SAME_AS_PICTURE); // Default to SAME_AS_PICTURE
 }
 
 int32_t getProfileSupportedScanInfo(int resourceIndex, int scanIndex) {
@@ -383,11 +383,11 @@ int32_t getProfileSupportedScanInfo(int resourceIndex, int scanIndex) {
 
     // Map ScanInformation enum strings to numeric values
     std::string scanStr(scanString);
-    if (scanStr == "NO_DATA") return static_cast<int32_t>(ScanInformation::NO_DATA);
-    if (scanStr == "OVERSCAN") return static_cast<int32_t>(ScanInformation::OVERSCAN);
-    if (scanStr == "UNDERSCAN") return static_cast<int32_t>(ScanInformation::UNDERSCAN);
-    if (scanStr == "RESERVED") return static_cast<int32_t>(ScanInformation::RESERVED);
-    return static_cast<int32_t>(ScanInformation::NO_DATA);
+    if (scanStr == "NO_DATA") return static_cast<int32_t>(hdmioutput::ScanInformation::NO_DATA);
+    if (scanStr == "OVERSCAN") return static_cast<int32_t>(hdmioutput::ScanInformation::OVERSCAN);
+    if (scanStr == "UNDERSCAN") return static_cast<int32_t>(hdmioutput::ScanInformation::UNDERSCAN);
+    if (scanStr == "RESERVED") return static_cast<int32_t>(hdmioutput::ScanInformation::RESERVED);
+    return static_cast<int32_t>(hdmioutput::ScanInformation::NO_DATA);
 }
 
 std::string getProfileSupportedSPDSource(int resourceIndex, int sourceIndex) {
@@ -404,13 +404,13 @@ std::string getProfileSupportedHDCPProtocolVersion(int resourceIndex, int versio
     return std::string(versionString);
 }
 
-HDCPProtocolVersion getProfileMaxSupportedHDCPProtocolVersion(int resourceIndex) {
+hdmioutput::HDCPProtocolVersion getProfileMaxSupportedHDCPProtocolVersion(int resourceIndex) {
     int versionCount = getProfileSupportedHDCPProtocolVersionCount(resourceIndex);
-    HDCPProtocolVersion maxVersion = HDCPProtocolVersion::UNDEFINED;
+    hdmioutput::HDCPProtocolVersion maxVersion = hdmioutput::HDCPProtocolVersion::UNDEFINED;
 
     for (int i = 0; i < versionCount; i++) {
         std::string versionStr = getProfileSupportedHDCPProtocolVersion(resourceIndex, i);
-        HDCPProtocolVersion currentVersion = convertStringToHDCPProtocolVersions(versionStr);
+        hdmioutput::HDCPProtocolVersion currentVersion = convertStringToHDCPProtocolVersions(versionStr);
 
         // VERSION_2_X (2) > VERSION_1_X (1) > UNDEFINED (0)
         if (static_cast<int>(currentVersion) > static_cast<int>(maxVersion)) {

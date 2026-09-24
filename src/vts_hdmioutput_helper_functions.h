@@ -111,16 +111,16 @@ extern const ut_control_keyStringMapping_t hdcpStatus_mapTable[];
 
 std::string hdmioutputVecIntToString(std::vector<int32_t>& addrs);
 std::string hdmioutputVecByteToHexString(const std::vector<uint8_t>& data);
-HDROutputMode convertStringToHDROutputMode(const std::string &val);
-HDCPProtocolVersion convertStringToHDCPProtocolVersions(const std::string &val);
-Colorimetry convertStringToColorimetry(const std::string &val);
-PixelFormat convertStringToPixelFormat(const std::string &val);
-SPDSource convertStringToSPDSource(const std::string &val);
-FreeSync convertStringToFreeSync(const std::string &val);
-HDMIVersion convertStringToHDMIVersion(const std::string &val);
-VIC convertStringToVIC(const std::string &val);
-ExtendedColorimetry convertStringToExtendedColorimetry(const std::string &val);
-AdditionalColorimetryExtension convertStringToAdditionalColorimetryExtension(const std::string &val);
+hdmioutput::HDROutputMode convertStringToHDROutputMode(const std::string &val);
+hdmioutput::HDCPProtocolVersion convertStringToHDCPProtocolVersions(const std::string &val);
+hdmioutput::Colorimetry convertStringToColorimetry(const std::string &val);
+hdmioutput::PixelFormat convertStringToPixelFormat(const std::string &val);
+hdmioutput::SPDSource convertStringToSPDSource(const std::string &val);
+hdmioutput::FreeSync convertStringToFreeSync(const std::string &val);
+hdmioutput::HDMIVersion convertStringToHDMIVersion(const std::string &val);
+hdmioutput::VIC convertStringToVIC(const std::string &val);
+hdmioutput::ExtendedColorimetry convertStringToExtendedColorimetry(const std::string &val);
+hdmioutput::AdditionalColorimetryExtension convertStringToAdditionalColorimetryExtension(const std::string &val);
 
 // Profile reading helper functions
 int32_t getProfileSupportedVIC(int resourceIndex, int vicIndex);
@@ -134,7 +134,7 @@ int getProfileSupportedHDRModeCount(int resourceIndex);
 int getProfileSupportedHDCPProtocolVersionCount(int resourceIndex);
 std::string getProfileSupportedSPDSource(int resourceIndex, int sourceIndex);
 std::string getProfileSupportedHDCPProtocolVersion(int resourceIndex, int versionIndex);
-HDCPProtocolVersion getProfileMaxSupportedHDCPProtocolVersion(int resourceIndex);
+hdmioutput::HDCPProtocolVersion getProfileMaxSupportedHDCPProtocolVersion(int resourceIndex);
 hdmioutput::Property convertStringToProperty(const std::string& propertyStr);
 
 #endif //__VTS_HDMIOUTPUT_HELPER_H__
