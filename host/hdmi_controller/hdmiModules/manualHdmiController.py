@@ -32,6 +32,16 @@ class manualHdmiController(HdmiInterface):
         self.prompt = prompt
         self.control_port = control_port
 
+    def getUserYN(self, query: str = "Please Enter Y or N :") -> bool:
+        """Prompt the user for a Y/N response and return True for Y, False for N."""
+        while True:
+            response = input(query).strip().lower()
+            if response == 'y':
+                return True
+            elif response == 'n':
+                return False
+            print("Invalid input. Please enter 'y' for Yes or 'n' for No.")
+
     def sendEDIDRead(self, port: int, data: list):
         return True
 
@@ -43,7 +53,7 @@ class manualHdmiController(HdmiInterface):
 
     def setHotplugState(self, port: int, connected: bool, version: str):
         if connected == False:
-                result = self.testUserResponse.getUserYN(f"UnPlug the HDMI device of HDCP version {version} and press Y:")
+                result = self.getUserYN(f"UnPlug the HDMI device of HDCP version {version} and press Y:")
         else :
-                result = self.testUserResponse.getUserYN(f"Plug the HDMI device of HDCP version {version} and press Y:")
+                result = self.getUserYN(f"Plug the HDMI device of HDCP version {version} and press Y:")
         return result
