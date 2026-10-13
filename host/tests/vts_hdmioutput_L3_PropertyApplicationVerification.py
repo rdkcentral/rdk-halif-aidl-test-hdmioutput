@@ -35,6 +35,7 @@ from raft.framework.plugins.ut_raft import utHelperClass
 from raft.framework.plugins.ut_raft.utSuiteNavigator import UTSuiteNavigatorClass
 from raft.framework.plugins.ut_raft.utBaseUtils import utBaseUtils
 from raft.framework.plugins.ut_raft.utUserResponse import utUserResponse
+from rdk_raft.controller import Controller
 from vts_hdmioutput_helper import hdmiOutputHelperClass
 
 HDMIOUTPUT_L3_TEST_SUITE_NAME = "VTS_L3_HDMIOUTPUT"
