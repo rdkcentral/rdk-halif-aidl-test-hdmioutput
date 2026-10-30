@@ -29,13 +29,6 @@ import time
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_path, "../"))
 
-# Placeholder for raft imports
-# from raft.framework.plugins.ut_raft.configRead import ConfigRead
-# from raft.framework.plugins.ut_raft import utHelperClass
-# from raft.framework.core.logModule import logModule
-# from raft.framework.plugins.ut_raft.utSuiteNavigator import UTSuiteNavigatorClass
-# from raft.framework.plugins.ut_raft.utBaseUtils import utBaseUtils
-
 HDMIOUTPUT_TEST_MENU_CONFIGURATION_FILE = os.path.join(dir_path, "vts_hdmioutput_testMenuConfiguration.yaml")
 HDMIOUTPUT_TESTCASES_CONFIGURATION_FILE = os.path.join(os.path.join(dir_path, "../configs"), "vts_hdmioutput_testcase_configuration.yaml")
 HDMIOUTPUT_L3_TEST_CONFIG_FILE = os.path.join(os.path.join(dir_path, "../../test_configuration"), "vts_l3_HdmiOutput.yaml")
@@ -45,6 +38,7 @@ from raft.framework.plugins.ut_raft import utHelperClass
 from raft.framework.core.logModule import logModule
 from raft.framework.plugins.ut_raft.utSuiteNavigator import UTSuiteNavigatorClass
 from raft.framework.plugins.ut_raft.utBaseUtils import utBaseUtils
+from rdk_raft.controller import Controller
 
 class hdmiOutputHelperClass(utHelperClass):
     def __init__(self, testName:str, qcId:str, log:logModule=None, hfpfile:str=None, testMenuConfigFile:str=None, moduleName:str=None, artifactDirPath:str=None ):
