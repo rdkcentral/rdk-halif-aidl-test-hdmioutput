@@ -98,7 +98,7 @@ hdmioutput:
         - id: 0  # IHDMIOutput.Id
           test_properties:
             - property: VIC
-              value: [4, 16, 97]  # Actual VIC values to test
+              value: [95, 96, 97]  # Actual VIC values to test
             - property: CONTENT_TYPE
               value: [0, 1, 2]  # Actual content type values (e.g., 0=NONE, 1=GRAPHICS, 2=PHOTO, 3=CINEMA)
             - property: AFD

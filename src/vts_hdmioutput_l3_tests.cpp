@@ -214,11 +214,7 @@ public:
         
         // Wait for HPD callback with timeout from config
         bool waitSuccess = controllerListener->waitForHPDCount(config.hpdSequence.size(), chrono::milliseconds(config.maxWaitTimeMs));
-        if (!isStarted) {
-            UT_ASSERT_FALSE(waitSuccess);
-        } else {
-            UT_ASSERT_TRUE(waitSuccess);
-        }
+        UT_ASSERT_TRUE(waitSuccess);
         sleep(1); // Ensure queue processing complete
 
         // get the max supported version for the port from the supported list in the config
@@ -229,14 +225,9 @@ public:
             bool inputHPDState = config.hpdSequence[i];
             bool actualHPDState;
             bool callbackReceived = controllerListener->getNextHPDStateChange(actualHPDState, chrono::milliseconds(100));
-            if (isStarted) {
-                UT_ASSERT_TRUE(callbackReceived);
-                UT_ASSERT_EQUAL(actualHPDState, inputHPDState);
-                UT_LOG_INFO("HPD callback received in STARTED state: %d \n", actualHPDState);
-            } else {
-                UT_ASSERT_FALSE(callbackReceived); // Should not receive HPD callbacks in READY state
-                UT_LOG_INFO("HPD callback correctly NOT received in READY state\n");
-            }
+            UT_ASSERT_TRUE(callbackReceived);
+            UT_ASSERT_EQUAL(actualHPDState, inputHPDState);
+            UT_LOG_INFO("HPD callback received in READY/STARTED state: %d \n", actualHPDState);
 
             std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo;
             bool cbReceived = controllerListener->getNextHDCPStatusChange(hdcpInfo, chrono::milliseconds(100));

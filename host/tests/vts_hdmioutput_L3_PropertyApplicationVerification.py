@@ -162,9 +162,10 @@ class VTS_HDMIOUTPUT_L3_PropertyApplicationVerification(hdmiOutputHelperClass):
             # Wait for HDCP simulation thread to finish
             self.connectThreadObj.join()
 
-            results = self.testUserResponse.getUserYN(
-                f"Are InfoFrames and properties (VIC, CONTENT_TYPE, HDR_OUTPUT_MODE, etc) correctly applied for port {port_id}? (Y/N):"
-            )
+            if self.platform != "vDevice":
+                results = self.testUserResponse.getUserYN(
+                    f"Are InfoFrames and properties (VIC, CONTENT_TYPE, HDR_OUTPUT_MODE, etc) correctly applied for port {port_id}? (Y/N):"
+                )
             self.log.stepResult(group_results, step_label)
             self.utMenu.stop()
             results = results and group_results

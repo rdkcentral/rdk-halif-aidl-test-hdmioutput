@@ -109,9 +109,12 @@ bool HDMIOutputEventListener::hasStateChanged() const {
         hdmioutput::State currentState;
         ::android::binder::Status status = mHDMIOutput->getState(&currentState);
         if (status.isOk()) {
-            // Only update queue if in OPENING or STARTED states
+            // Only update queue if in OPENING or READY STARTING STARTED and STOPPING states
             shouldUpdateQueue = (currentState == hdmioutput::State::OPENING ||
-                                currentState == hdmioutput::State::STARTED);
+                                currentState == hdmioutput::State::READY ||
+                                currentState == hdmioutput::State::STARTING ||
+                                currentState == hdmioutput::State::STARTED ||
+                                currentState == hdmioutput::State::STOPPING);
             
             if (!shouldUpdateQueue) {
                 UT_LOG_INFO("HDMIOutputControllerListener::onHotPlugDetectStateChanged called with state[%s] but current device state is [%d] - not updating queue\n",
