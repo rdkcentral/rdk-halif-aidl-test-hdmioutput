@@ -194,6 +194,29 @@ public:
             UT_LOG_INFO("HDCP callback is not received as expected till the state chages to STARTED\n");
         }
 
+        // get the max supported version for the port from the supported list in the config
+        hdmioutput::HDCPProtocolVersion maxSupportedVersion = getProfileMaxSupportedHDCPProtocolVersion(config.portId);
+        hdmioutput::HDCPProtocolVersion negotiatedVersion = (config.expectedHdcpVersions <= maxSupportedVersion) ? config.expectedHdcpVersions : maxSupportedVersion;
+
+        bool authenticated = false;
+        if (isStarted && config.hdcpSupported && config.connectionState)
+        {
+            std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo1;
+            bool cbReceived1 = controllerListener->getNextHDCPStatusChange(hdcpInfo1, chrono::milliseconds(config.maxWaitTimeMs));
+            UT_ASSERT_TRUE(cbReceived1);
+            UT_ASSERT_EQUAL(hdcpInfo1.first, hdmioutput::HDCPStatus::AUTHENTICATION_IN_PROGRESS);
+            UT_ASSERT_EQUAL(hdcpInfo1.second, hdmioutput::HDCPProtocolVersion::UNDEFINED);
+            UT_LOG_INFO("Initial HDCP status callback received: %d \n", static_cast<int>(hdcpInfo1.first));
+
+            std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo2;
+            bool cbReceived2 = controllerListener->getNextHDCPStatusChange(hdcpInfo2, chrono::milliseconds(config.maxWaitTimeMs));
+            UT_ASSERT_TRUE(cbReceived2);
+            UT_ASSERT_EQUAL(hdcpInfo2.first, hdmioutput::HDCPStatus::AUTHENTICATED);
+            UT_ASSERT_EQUAL(hdcpInfo2.second, negotiatedVersion);
+            UT_LOG_INFO("Initial HDCP status callback received: %d \n", static_cast<int>(hdcpInfo2.first));
+            authenticated = true;
+        }
+
         // Step 4: Verify EDID callback if expected
         std::vector<uint8_t> edid;
         bool edidReceived = controllerListener->getNextEDID(edid, chrono::milliseconds(config.maxWaitTimeMs));
@@ -214,29 +237,17 @@ public:
         
         // Wait for HPD callback with timeout from config
         bool waitSuccess = controllerListener->waitForHPDCount(config.hpdSequence.size(), chrono::milliseconds(config.maxWaitTimeMs));
-        if (!isStarted) {
-            UT_ASSERT_FALSE(waitSuccess);
-        } else {
-            UT_ASSERT_TRUE(waitSuccess);
-        }
+        UT_ASSERT_TRUE(waitSuccess);
         sleep(1); // Ensure queue processing complete
 
-        // get the max supported version for the port from the supported list in the config
-        hdmioutput::HDCPProtocolVersion maxSupportedVersion = getProfileMaxSupportedHDCPProtocolVersion(config.portId);
-        hdmioutput::HDCPProtocolVersion negotiatedVersion = (config.expectedHdcpVersions <= maxSupportedVersion) ? config.expectedHdcpVersions : maxSupportedVersion;
         for (size_t i = 0; i < config.hpdSequence.size(); ++i)
         {
             bool inputHPDState = config.hpdSequence[i];
             bool actualHPDState;
             bool callbackReceived = controllerListener->getNextHPDStateChange(actualHPDState, chrono::milliseconds(100));
-            if (isStarted) {
-                UT_ASSERT_TRUE(callbackReceived);
-                UT_ASSERT_EQUAL(actualHPDState, inputHPDState);
-                UT_LOG_INFO("HPD callback received in STARTED state: %d \n", actualHPDState);
-            } else {
-                UT_ASSERT_FALSE(callbackReceived); // Should not receive HPD callbacks in READY state
-                UT_LOG_INFO("HPD callback correctly NOT received in READY state\n");
-            }
+            UT_ASSERT_TRUE(callbackReceived);
+            UT_ASSERT_EQUAL(actualHPDState, inputHPDState);
+            UT_LOG_INFO("HPD callback received in READY/STARTED state: %d \n", actualHPDState);
 
             std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo;
             bool cbReceived = controllerListener->getNextHDCPStatusChange(hdcpInfo, chrono::milliseconds(100));
@@ -268,6 +279,7 @@ public:
                     HDMIOUTPUT_GET_HDCP_STATUS(controller, hdcpstatus);
                     UT_ASSERT_EQUAL(hdcpstatus, hdmioutput::HDCPStatus::AUTHENTICATED);
                     UT_LOG_INFO("Current HDCP status from getHDCPStatus: %d \n", static_cast<int>(hdcpstatus));
+                    authenticated = true;
                 }
                 std::vector<uint8_t> edid;
                 bool edidReceived = controllerListener->getNextEDID(edid, chrono::milliseconds(config.maxWaitTimeMs));
@@ -288,6 +300,15 @@ public:
                     }
                 }
             } else {
+                if (authenticated) {
+                    // HPD lost from AUTHENTICATED: UNAUTHENTICATED precedes UNKNOWN
+                    UT_ASSERT_EQUAL(hdcpInfo.first, hdmioutput::HDCPStatus::UNAUTHENTICATED);
+                    UT_ASSERT_EQUAL(hdcpInfo.second, hdmioutput::HDCPProtocolVersion::UNDEFINED);
+                    UT_LOG_INFO("HDCP status callback received with UNAUTHENTICATED status on HPD lost\n");
+                    cbReceived = controllerListener->getNextHDCPStatusChange(hdcpInfo, chrono::milliseconds(5000));
+                    UT_ASSERT_TRUE(cbReceived);
+                    authenticated = false;
+                }
                 UT_ASSERT_EQUAL(hdcpInfo.first, hdmioutput::HDCPStatus::UNKNOWN);
                 UT_ASSERT_EQUAL(hdcpInfo.second, hdmioutput::HDCPProtocolVersion::UNDEFINED);
                 UT_LOG_INFO("HDCP status callback received with UNKNOWN status as expected when HPD is FALSE\n");
