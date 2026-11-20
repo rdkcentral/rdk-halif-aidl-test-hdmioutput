@@ -332,9 +332,9 @@ UT_ADD_TEST(VTS_L1_HDMIOUTPUT, getCapabilities_pos)
         bool expectedSupportsQFT = UT_KVP_PROFILE_GET_BOOL(key.c_str());
         UT_ASSERT_EQUAL(capabilities.supportsQFT, expectedSupportsQFT);
 
-        //key = "hdmioutput.resources." + std::to_string(i) + ".supportsForcedHDROutputModes";
-        //bool expectedSupportsForcedHDROutputModes = UT_KVP_PROFILE_GET_BOOL(key.c_str());
-        //UT_ASSERT_EQUAL(capabilities.supportsForcedHDROutputModes, expectedSupportsForcedHDROutputModes);
+        key = "hdmioutput.resources." + std::to_string(i) + ".supportsForcedHDROutputModes";
+        bool expectedSupportsForcedHDROutputModes = UT_KVP_PROFILE_GET_BOOL(key.c_str());
+        UT_ASSERT_EQUAL(capabilities.supportsForcedHDROutputModes, expectedSupportsForcedHDROutputModes);
 
         // Verify supported versions - count and values
         key = "hdmioutput.resources." + std::to_string(i) + ".supportedVersions";
