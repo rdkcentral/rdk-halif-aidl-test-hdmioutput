@@ -22,7 +22,6 @@
 #* ******************************************************************************
 
 import os
-import re
 import sys
 import time
 import threading
@@ -60,7 +59,7 @@ class VTS_HDMIOUTPUT_L3_PropertyApplicationVerification(hdmiOutputHelperClass):
         self.hdmiController = Controller.hdmi_output(
             self.log, self.dut.rawConfig.get("dut").get("hdmiController")
         )
-        
+
     def updateTestConfiguration(self, testName: str, portid: int):
         profile_data = self.hdmiOutputReadYaml(self.moduleHFPFile)
         resources = profile_data[self.moduleName].get("resources", [])
@@ -68,29 +67,30 @@ class VTS_HDMIOUTPUT_L3_PropertyApplicationVerification(hdmiOutputHelperClass):
         if profile_port is None:
             raise ValueError(f"Port id {portid} not found in profile {self.moduleHFPFile}")
 
-        supported_vics = profile_port.get("supportedVICs", [])
-        vic_values = []
-        for vic in supported_vics:
-            match = re.match(r"^VIC(\d+)(?:_|$)", str(vic))
-            if not match:
-                raise ValueError(f"Unsupported VIC profile entry: {vic}")
-            vic_values.append(int(match.group(1)))
-        if not vic_values:
-            raise ValueError(f"No supportedVICs configured for port {portid}")
-
         self.test_config_data = self.hdmiOutputReadYaml(self.l3TestConfigFile)
         ports = self.test_config_data[self.moduleName][self.testLevel][testName]["ports"]
         test_port = next((port for port in ports if port.get("id") == portid), None)
         if test_port is None:
             raise ValueError(f"Port id {portid} not found in '{testName}' test configuration")
 
-        vic_property = next(
-            (prop for prop in test_port.get("test_properties", []) if prop.get("property") == "VIC"),
-            None,
-        )
-        if vic_property is None:
-            raise ValueError(f"VIC property not configured for port {portid} in '{testName}'")
-        vic_property["value"] = vic_values
+        profile_property_keys = {
+            "VIC": "supportedVICs",
+            "CONTENT_TYPE": "supportedContentTypes",
+            "AFD": "supportedAFD",
+            "HDR_OUTPUT_MODE": "supportedHDROutputModes",
+            "SCAN_INFORMATION": "supportedScanInformation",
+        }
+        configured_properties = {
+            prop.get("property"): prop for prop in test_port.get("test_properties", [])
+        }
+        for property_name, profile_key in profile_property_keys.items():
+            profile_values = profile_port.get(profile_key, [])
+            if not profile_values:
+                raise ValueError(f"No {profile_key} configured for port {portid}")
+            property_config = configured_properties.get(property_name)
+            if property_config is None:
+                raise ValueError(f"{property_name} property not configured for port {portid} in '{testName}'")
+            property_config["value"] = list(profile_values)
 
         self.hdmiOutputWriteYaml(self.l3TestConfigFile, self.test_config_data)
         target_config_path = self.targetWorkspace + "/test_configuration/"

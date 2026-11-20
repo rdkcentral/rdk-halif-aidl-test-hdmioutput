@@ -63,6 +63,55 @@
 static const char *moduleName = "hdmioutput";
 static const char *testGroupName = "L3";
 
+static bool convertPropertyEnumValue(const std::string& propertyName, const std::string& enumName, int32_t& value)
+{
+    if (propertyName == "VIC" && enumName.rfind("VIC", 0) == 0)
+    {
+        value = static_cast<int32_t>(convertStringToVIC(enumName));
+        return true;
+    }
+    if (propertyName == "CONTENT_TYPE")
+    {
+        if (enumName == "UNSPECIFIED") value = static_cast<int32_t>(hdmioutput::ContentType::UNSPECIFIED);
+        else if (enumName == "GRAPHICS") value = static_cast<int32_t>(hdmioutput::ContentType::GRAPHICS);
+        else if (enumName == "PHOTO") value = static_cast<int32_t>(hdmioutput::ContentType::PHOTO);
+        else if (enumName == "CINEMA") value = static_cast<int32_t>(hdmioutput::ContentType::CINEMA);
+        else if (enumName == "GAME") value = static_cast<int32_t>(hdmioutput::ContentType::GAME);
+        else return false;
+        return true;
+    }
+    if (propertyName == "AFD")
+    {
+        if (enumName == "UNSPECIFIED") value = static_cast<int32_t>(hdmioutput::AFD::UNSPECIFIED);
+        else if (enumName == "SAME_AS_PICTURE") value = static_cast<int32_t>(hdmioutput::AFD::SAME_AS_PICTURE);
+        else if (enumName == "CENTER_4_3") value = static_cast<int32_t>(hdmioutput::AFD::CENTER_4_3);
+        else if (enumName == "CENTER_16_9") value = static_cast<int32_t>(hdmioutput::AFD::CENTER_16_9);
+        else if (enumName == "CENTER_14_9") value = static_cast<int32_t>(hdmioutput::AFD::CENTER_14_9);
+        else return false;
+        return true;
+    }
+    if (propertyName == "HDR_OUTPUT_MODE")
+    {
+        if (enumName == "AUTO" || enumName == "HLG" || enumName == "HDR10" ||
+            enumName == "HDR10_PLUS" || enumName == "DOLBY_VISION")
+        {
+            value = static_cast<int32_t>(convertStringToHDROutputMode(enumName));
+            return true;
+        }
+        return false;
+    }
+    if (propertyName == "SCAN_INFORMATION")
+    {
+        if (enumName == "NO_DATA") value = static_cast<int32_t>(hdmioutput::ScanInformation::NO_DATA);
+        else if (enumName == "OVERSCAN") value = static_cast<int32_t>(hdmioutput::ScanInformation::OVERSCAN);
+        else if (enumName == "UNDERSCAN") value = static_cast<int32_t>(hdmioutput::ScanInformation::UNDERSCAN);
+        else if (enumName == "RESERVED") value = static_cast<int32_t>(hdmioutput::ScanInformation::RESERVED);
+        else return false;
+        return true;
+    }
+    return false;
+}
+
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L3_HDMIOUTPUT, UT_TESTS_L3)
 
@@ -621,9 +670,14 @@ UT_ADD_TEST(VTS_L3_HDMIOUTPUT, PropertyApplicationVerification)
                 hdmioutput::Property prop = convertStringToProperty(property.propertyName);
 
                 // Test each value
-                for (int32_t testValue : property.values)
+                for (const std::string& enumName : property.values)
                 {
-                    UT_LOG_INFO("  Setting %s to value: %d\n", property.propertyName.c_str(), testValue);
+                    int32_t testValue = 0;
+                    bool valueConverted = convertPropertyEnumValue(property.propertyName, enumName, testValue);
+                    UT_ASSERT_TRUE(valueConverted);
+                    if (!valueConverted)
+                        continue;
+                    UT_LOG_INFO("  Setting %s to %s (%d)\n", property.propertyName.c_str(), enumName.c_str(), testValue);
 
                     // Set the property
                     PropertyValue propValue;
