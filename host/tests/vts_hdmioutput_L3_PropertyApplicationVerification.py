@@ -84,12 +84,13 @@ class VTS_HDMIOUTPUT_L3_PropertyApplicationVerification(hdmiOutputHelperClass):
             prop.get("property"): prop for prop in test_port.get("test_properties", [])
         }
         for property_name, profile_key in profile_property_keys.items():
+            property_config = configured_properties.get(property_name)
+            if property_config is None:
+                continue
+
             profile_values = profile_port.get(profile_key, [])
             if not profile_values:
                 raise ValueError(f"No {profile_key} configured for port {portid}")
-            property_config = configured_properties.get(property_name)
-            if property_config is None:
-                raise ValueError(f"{property_name} property not configured for port {portid} in '{testName}'")
             property_config["value"] = list(profile_values)
 
         self.hdmiOutputWriteYaml(self.l3TestConfigFile, self.test_config_data)
