@@ -101,11 +101,17 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateAfterStartCallback(hdmiOutputHelperCla
         """
         time.sleep(2)
         ports_config = self.test_config[self.moduleName][self.testLevel][self.testcase]['ports']
+        hdcp_supported = ports_config[portid]['hdcp_supported']
+        authenticated = False
         if connect_state:
             self.hdmiController.setHDCPStatus(portid, "UNAUTHENTICATED", "UNDEFINED")
-        
-        hdcp_supported = ports_config[portid]['hdcp_supported']
-        time.sleep(20)
+            if hdcp_supported:
+                time.sleep(1)
+                self.hdmiController.setHDCPStatus(portid, "AUTHENTICATION_IN_PROGRESS", "UNDEFINED")
+                self.hdmiController.setHDCPStatus(portid, "AUTHENTICATED", sinkversion)
+                authenticated = True
+
+        time.sleep(19)
         hpd_sequence = ports_config[portid]['hpd_sequence']
         for hpd in hpd_sequence:
             self.hdmiController.setHotplugState(portid, hpd, sinkversion)
@@ -114,7 +120,11 @@ class VTS_HDMIOUTPUT_L3_HotPlugDetectStateAfterStartCallback(hdmiOutputHelperCla
                 if hdcp_supported:
                     self.hdmiController.setHDCPStatus(portid, "AUTHENTICATION_IN_PROGRESS", "UNDEFINED")
                     self.hdmiController.setHDCPStatus(portid, "AUTHENTICATED", sinkversion)
+                    authenticated = True
             else:
+                if authenticated:
+                    self.hdmiController.setHDCPStatus(portid, "UNAUTHENTICATED", "UNDEFINED")
+                    authenticated = False
                 self.hdmiController.setHDCPStatus(portid, "UNKNOWN", "UNDEFINED")
 
         time.sleep(1)
