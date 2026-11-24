@@ -71,7 +71,7 @@ typedef struct hdmioutputSPDConfig
 typedef struct hdmioutputPropertyTestItem
 {
     std::string propertyName;
-    std::vector<int32_t> values;
+    std::vector<std::string> values;
 } hdmioutputPropertyTestItem_t;
 
 typedef struct hdmioutputPropertyConfig

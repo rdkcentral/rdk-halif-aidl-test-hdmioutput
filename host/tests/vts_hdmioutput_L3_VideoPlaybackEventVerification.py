@@ -29,13 +29,13 @@ import threading
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_path, "../"))
 
-from rdk_raft.controller import Controller
 from raft.framework.plugins.ut_raft.configRead import ConfigRead
 from raft.framework.core.logModule import logModule
 from raft.framework.plugins.ut_raft import utHelperClass
 from raft.framework.plugins.ut_raft.utSuiteNavigator import UTSuiteNavigatorClass
 from raft.framework.plugins.ut_raft.utBaseUtils import utBaseUtils
 from raft.framework.plugins.ut_raft.utUserResponse import utUserResponse
+from rdk_raft.controller import Controller
 from vts_hdmioutput_helper import hdmiOutputHelperClass
 
 HDMIOUTPUT_L3_TEST_SUITE_NAME = "VTS_L3_HDMIOUTPUT"
@@ -142,10 +142,11 @@ class VTS_HDMIOUTPUT_L3_VideoPlaybackEventVerification(hdmiOutputHelperClass):
             # Wait for HDCP simulation thread to finish
             self.connectThreadObj.join()
 
-            # Prompt user for InfoFrame event verification
-            results = self.testUserResponse.getUserYN(
-                f"Are InfoFrame events(AudioInfoFrame, DRMInfoFrame etc) generated during video playback for port {port_id}? (Y/N):"
-            )
+            if self.platform != "vDevice":
+                # Prompt user for InfoFrame event verification
+                results = self.testUserResponse.getUserYN(
+                    f"Are InfoFrame events(AudioInfoFrame, DRMInfoFrame etc) generated during video playback for port {port_id}? (Y/N):"
+                )
             self.log.stepResult(group_results, step_label)
             self.utMenu.stop()
             results = results and group_results

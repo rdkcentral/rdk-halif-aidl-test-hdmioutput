@@ -244,7 +244,8 @@ UT_status_t vts_hdmioutput_parse_propertyTest(char *configurationFile, const cha
             {
                 char valuekey[2 * UT_KVP_MAX_ELEMENT_SIZE];
                 snprintf(valuekey, sizeof(valuekey), "%s.ports.%d.test_properties.%d.value.%d", testList, i, j, k);
-                property.values.push_back(ut_kvp_getUInt32Field(kvpTestInstance, valuekey));
+                ut_kvp_getStringField(kvpTestInstance, valuekey, subValue, sizeof(subValue));
+                property.values.emplace_back(subValue);
             }
 
             config.testProperties.push_back(property);

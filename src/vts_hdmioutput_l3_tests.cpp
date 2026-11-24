@@ -63,6 +63,55 @@
 static const char *moduleName = "hdmioutput";
 static const char *testGroupName = "L3";
 
+static bool convertPropertyEnumValue(const std::string& propertyName, const std::string& enumName, int32_t& value)
+{
+    if (propertyName == "VIC" && enumName.rfind("VIC", 0) == 0)
+    {
+        value = static_cast<int32_t>(convertStringToVIC(enumName));
+        return true;
+    }
+    if (propertyName == "CONTENT_TYPE")
+    {
+        if (enumName == "UNSPECIFIED") value = static_cast<int32_t>(hdmioutput::ContentType::UNSPECIFIED);
+        else if (enumName == "GRAPHICS") value = static_cast<int32_t>(hdmioutput::ContentType::GRAPHICS);
+        else if (enumName == "PHOTO") value = static_cast<int32_t>(hdmioutput::ContentType::PHOTO);
+        else if (enumName == "CINEMA") value = static_cast<int32_t>(hdmioutput::ContentType::CINEMA);
+        else if (enumName == "GAME") value = static_cast<int32_t>(hdmioutput::ContentType::GAME);
+        else return false;
+        return true;
+    }
+    if (propertyName == "AFD")
+    {
+        if (enumName == "UNSPECIFIED") value = static_cast<int32_t>(hdmioutput::AFD::UNSPECIFIED);
+        else if (enumName == "SAME_AS_PICTURE") value = static_cast<int32_t>(hdmioutput::AFD::SAME_AS_PICTURE);
+        else if (enumName == "CENTER_4_3") value = static_cast<int32_t>(hdmioutput::AFD::CENTER_4_3);
+        else if (enumName == "CENTER_16_9") value = static_cast<int32_t>(hdmioutput::AFD::CENTER_16_9);
+        else if (enumName == "CENTER_14_9") value = static_cast<int32_t>(hdmioutput::AFD::CENTER_14_9);
+        else return false;
+        return true;
+    }
+    if (propertyName == "HDR_OUTPUT_MODE")
+    {
+        if (enumName == "AUTO" || enumName == "HLG" || enumName == "HDR10" ||
+            enumName == "HDR10_PLUS" || enumName == "DOLBY_VISION")
+        {
+            value = static_cast<int32_t>(convertStringToHDROutputMode(enumName));
+            return true;
+        }
+        return false;
+    }
+    if (propertyName == "SCAN_INFORMATION")
+    {
+        if (enumName == "NO_DATA") value = static_cast<int32_t>(hdmioutput::ScanInformation::NO_DATA);
+        else if (enumName == "OVERSCAN") value = static_cast<int32_t>(hdmioutput::ScanInformation::OVERSCAN);
+        else if (enumName == "UNDERSCAN") value = static_cast<int32_t>(hdmioutput::ScanInformation::UNDERSCAN);
+        else if (enumName == "RESERVED") value = static_cast<int32_t>(hdmioutput::ScanInformation::RESERVED);
+        else return false;
+        return true;
+    }
+    return false;
+}
+
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L3_HDMIOUTPUT, UT_TESTS_L3)
 
@@ -194,6 +243,29 @@ public:
             UT_LOG_INFO("HDCP callback is not received as expected till the state chages to STARTED\n");
         }
 
+        // get the max supported version for the port from the supported list in the config
+        hdmioutput::HDCPProtocolVersion maxSupportedVersion = getProfileMaxSupportedHDCPProtocolVersion(config.portId);
+        hdmioutput::HDCPProtocolVersion negotiatedVersion = (config.expectedHdcpVersions <= maxSupportedVersion) ? config.expectedHdcpVersions : maxSupportedVersion;
+
+        bool authenticated = false;
+        if (isStarted && config.hdcpSupported && config.connectionState)
+        {
+            std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo1;
+            bool cbReceived1 = controllerListener->getNextHDCPStatusChange(hdcpInfo1, chrono::milliseconds(config.maxWaitTimeMs));
+            UT_ASSERT_TRUE(cbReceived1);
+            UT_ASSERT_EQUAL(hdcpInfo1.first, hdmioutput::HDCPStatus::AUTHENTICATION_IN_PROGRESS);
+            UT_ASSERT_EQUAL(hdcpInfo1.second, hdmioutput::HDCPProtocolVersion::UNDEFINED);
+            UT_LOG_INFO("Initial HDCP status callback received: %d \n", static_cast<int>(hdcpInfo1.first));
+
+            std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo2;
+            bool cbReceived2 = controllerListener->getNextHDCPStatusChange(hdcpInfo2, chrono::milliseconds(config.maxWaitTimeMs));
+            UT_ASSERT_TRUE(cbReceived2);
+            UT_ASSERT_EQUAL(hdcpInfo2.first, hdmioutput::HDCPStatus::AUTHENTICATED);
+            UT_ASSERT_EQUAL(hdcpInfo2.second, negotiatedVersion);
+            UT_LOG_INFO("Initial HDCP status callback received: %d \n", static_cast<int>(hdcpInfo2.first));
+            authenticated = true;
+        }
+
         // Step 4: Verify EDID callback if expected
         std::vector<uint8_t> edid;
         bool edidReceived = controllerListener->getNextEDID(edid, chrono::milliseconds(config.maxWaitTimeMs));
@@ -214,29 +286,17 @@ public:
         
         // Wait for HPD callback with timeout from config
         bool waitSuccess = controllerListener->waitForHPDCount(config.hpdSequence.size(), chrono::milliseconds(config.maxWaitTimeMs));
-        if (!isStarted) {
-            UT_ASSERT_FALSE(waitSuccess);
-        } else {
-            UT_ASSERT_TRUE(waitSuccess);
-        }
+        UT_ASSERT_TRUE(waitSuccess);
         sleep(1); // Ensure queue processing complete
 
-        // get the max supported version for the port from the supported list in the config
-        hdmioutput::HDCPProtocolVersion maxSupportedVersion = getProfileMaxSupportedHDCPProtocolVersion(config.portId);
-        hdmioutput::HDCPProtocolVersion negotiatedVersion = (config.expectedHdcpVersions <= maxSupportedVersion) ? config.expectedHdcpVersions : maxSupportedVersion;
         for (size_t i = 0; i < config.hpdSequence.size(); ++i)
         {
             bool inputHPDState = config.hpdSequence[i];
             bool actualHPDState;
             bool callbackReceived = controllerListener->getNextHPDStateChange(actualHPDState, chrono::milliseconds(100));
-            if (isStarted) {
-                UT_ASSERT_TRUE(callbackReceived);
-                UT_ASSERT_EQUAL(actualHPDState, inputHPDState);
-                UT_LOG_INFO("HPD callback received in STARTED state: %d \n", actualHPDState);
-            } else {
-                UT_ASSERT_FALSE(callbackReceived); // Should not receive HPD callbacks in READY state
-                UT_LOG_INFO("HPD callback correctly NOT received in READY state\n");
-            }
+            UT_ASSERT_TRUE(callbackReceived);
+            UT_ASSERT_EQUAL(actualHPDState, inputHPDState);
+            UT_LOG_INFO("HPD callback received in READY/STARTED state: %d \n", actualHPDState);
 
             std::pair<hdmioutput::HDCPStatus, hdmioutput::HDCPProtocolVersion> hdcpInfo;
             bool cbReceived = controllerListener->getNextHDCPStatusChange(hdcpInfo, chrono::milliseconds(100));
@@ -268,6 +328,7 @@ public:
                     HDMIOUTPUT_GET_HDCP_STATUS(controller, hdcpstatus);
                     UT_ASSERT_EQUAL(hdcpstatus, hdmioutput::HDCPStatus::AUTHENTICATED);
                     UT_LOG_INFO("Current HDCP status from getHDCPStatus: %d \n", static_cast<int>(hdcpstatus));
+                    authenticated = true;
                 }
                 std::vector<uint8_t> edid;
                 bool edidReceived = controllerListener->getNextEDID(edid, chrono::milliseconds(config.maxWaitTimeMs));
@@ -288,6 +349,15 @@ public:
                     }
                 }
             } else {
+                if (authenticated) {
+                    // HPD lost from AUTHENTICATED: UNAUTHENTICATED precedes UNKNOWN
+                    UT_ASSERT_EQUAL(hdcpInfo.first, hdmioutput::HDCPStatus::UNAUTHENTICATED);
+                    UT_ASSERT_EQUAL(hdcpInfo.second, hdmioutput::HDCPProtocolVersion::UNDEFINED);
+                    UT_LOG_INFO("HDCP status callback received with UNAUTHENTICATED status on HPD lost\n");
+                    cbReceived = controllerListener->getNextHDCPStatusChange(hdcpInfo, chrono::milliseconds(5000));
+                    UT_ASSERT_TRUE(cbReceived);
+                    authenticated = false;
+                }
                 UT_ASSERT_EQUAL(hdcpInfo.first, hdmioutput::HDCPStatus::UNKNOWN);
                 UT_ASSERT_EQUAL(hdcpInfo.second, hdmioutput::HDCPProtocolVersion::UNDEFINED);
                 UT_LOG_INFO("HDCP status callback received with UNKNOWN status as expected when HPD is FALSE\n");
@@ -630,9 +700,14 @@ UT_ADD_TEST(VTS_L3_HDMIOUTPUT, PropertyApplicationVerification)
                 hdmioutput::Property prop = convertStringToProperty(property.propertyName);
 
                 // Test each value
-                for (int32_t testValue : property.values)
+                for (const std::string& enumName : property.values)
                 {
-                    UT_LOG_INFO("  Setting %s to value: %d\n", property.propertyName.c_str(), testValue);
+                    int32_t testValue = 0;
+                    bool valueConverted = convertPropertyEnumValue(property.propertyName, enumName, testValue);
+                    UT_ASSERT_TRUE(valueConverted);
+                    if (!valueConverted)
+                        continue;
+                    UT_LOG_INFO("  Setting %s to %s (%d)\n", property.propertyName.c_str(), enumName.c_str(), testValue);
 
                     // Set the property
                     PropertyValue propValue;
