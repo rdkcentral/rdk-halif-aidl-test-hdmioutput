@@ -60,6 +60,44 @@ class VTS_HDMIOUTPUT_L3_PropertyApplicationVerification(hdmiOutputHelperClass):
             self.log, self.dut.rawConfig.get("dut").get("hdmiController")
         )
 
+    def updateTestConfiguration(self, testName: str, portid: int):
+        profile_data = self.hdmiOutputReadYaml(self.moduleHFPFile)
+        resources = profile_data[self.moduleName].get("resources", [])
+        profile_port = next((resource for resource in resources if resource.get("id") == portid), None)
+        if profile_port is None:
+            raise ValueError(f"Port id {portid} not found in profile {self.moduleHFPFile}")
+
+        self.test_config_data = self.hdmiOutputReadYaml(self.l3TestConfigFile)
+        ports = self.test_config_data[self.moduleName][self.testLevel][testName]["ports"]
+        test_port = next((port for port in ports if port.get("id") == portid), None)
+        if test_port is None:
+            raise ValueError(f"Port id {portid} not found in '{testName}' test configuration")
+
+        profile_property_keys = {
+            "VIC": "supportedVICs",
+            "CONTENT_TYPE": "supportedContentTypes",
+            "AFD": "supportedAFD",
+            "HDR_OUTPUT_MODE": "supportedHDROutputModes",
+            "SCAN_INFORMATION": "supportedScanInformation",
+        }
+        configured_properties = {
+            prop.get("property"): prop for prop in test_port.get("test_properties", [])
+        }
+        for property_name, profile_key in profile_property_keys.items():
+            property_config = configured_properties.get(property_name)
+            if property_config is None:
+                continue
+
+            profile_values = profile_port.get(profile_key, [])
+            if not profile_values:
+                raise ValueError(f"No {profile_key} configured for port {portid}")
+            property_config["value"] = list(profile_values)
+
+        self.hdmiOutputWriteYaml(self.l3TestConfigFile, self.test_config_data)
+        target_config_path = self.targetWorkspace + "/test_configuration/"
+        self.utilities.sftpCopy(self.hal_session, self.l3TestConfigFile, target_config_path)
+        self.test_config = self.test_config_data
+
     def connectThread(self, portid, connect_state):
         """
             Step 1: Wait for C++ test initialization.
@@ -129,6 +167,7 @@ class VTS_HDMIOUTPUT_L3_PropertyApplicationVerification(hdmiOutputHelperClass):
             if port_id not in valid_port_ids:
                 self.log.warning(f"[testFunction] port={port_id} not found in test config, skipping.")
                 continue
+            self.updateTestConfiguration(self.testcase, port_id)
             connect_state = True
 
             # Start HDCP handshake simulation thread
@@ -162,9 +201,10 @@ class VTS_HDMIOUTPUT_L3_PropertyApplicationVerification(hdmiOutputHelperClass):
             # Wait for HDCP simulation thread to finish
             self.connectThreadObj.join()
 
-            results = self.testUserResponse.getUserYN(
-                f"Are InfoFrames and properties (VIC, CONTENT_TYPE, HDR_OUTPUT_MODE, etc) correctly applied for port {port_id}? (Y/N):"
-            )
+            if self.platform != "vDevice":
+                results = self.testUserResponse.getUserYN(
+                    f"Are InfoFrames and properties (VIC, CONTENT_TYPE, HDR_OUTPUT_MODE, etc) correctly applied for port {port_id}? (Y/N):"
+                )
             self.log.stepResult(group_results, step_label)
             self.utMenu.stop()
             results = results and group_results

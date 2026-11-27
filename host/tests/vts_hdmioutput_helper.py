@@ -71,6 +71,7 @@ class hdmiOutputHelperClass(utHelperClass):
             profileOnTarget = os.path.join(profileOnTarget, os.path.basename(self.moduleHFPFile))
         profileOnTarget = profileOnTarget.replace("\\", "/")
         self.waitTime = 500
+        self.platform = self.cpe.get("platform")
 
         # Load test menu and test case configuration files
         self.l3TestConfigFile = HDMIOUTPUT_L3_TEST_CONFIG_FILE.replace("\\", "/")

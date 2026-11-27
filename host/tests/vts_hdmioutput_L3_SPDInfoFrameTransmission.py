@@ -29,13 +29,13 @@ import threading
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_path, "../"))
 
-from rdk_raft.controller import Controller
 from raft.framework.plugins.ut_raft.configRead import ConfigRead
 from raft.framework.core.logModule import logModule
 from raft.framework.plugins.ut_raft import utHelperClass
 from raft.framework.plugins.ut_raft.utSuiteNavigator import UTSuiteNavigatorClass
 from raft.framework.plugins.ut_raft.utBaseUtils import utBaseUtils
 from raft.framework.plugins.ut_raft.utUserResponse import utUserResponse
+from rdk_raft.controller import Controller
 from vts_hdmioutput_helper import hdmiOutputHelperClass
 
 HDMIOUTPUT_L3_TEST_SUITE_NAME = "VTS_L3_HDMIOUTPUT"
@@ -231,7 +231,8 @@ class VTS_HDMIOUTPUT_L3_SPDInfoFrameTransmission(hdmiOutputHelperClass):
                 # 6. Wait for the simulation thread to finish
                 self.connectThreadObj.join()
 
-                results = self.testUserResponse.getUserYN(f"Is SPD frames transmitted on active video transmission? (Y/N):")
+                if self.platform != "vDevice":
+                    results = self.testUserResponse.getUserYN(f"Is SPD frames transmitted on active video transmission? (Y/N):")
                 self.log.stepResult(group_results, step_label)
 
                 # 7. Stop the menu and clean up before the next iteration
